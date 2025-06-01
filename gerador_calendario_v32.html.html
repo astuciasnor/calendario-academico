@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Gerador de Calendário (v32 - CSV Dinâmico)</title>
+    <style>
+        /* Estilos CSS (Idênticos à v31.2, apenas copiados para completude) */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f4; color: #333; font-size: 14px; }
+        .container { max-width: 1200px; margin: 0 auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        h1, h2, h3 { text-align: center; color: #333; }
+        h3 { margin-top: 1.5em; margin-bottom: 0.8em; border-bottom: 1px solid #eee; padding-bottom: 0.3em; }
+        #configForm fieldset { border: 1px solid #ccc; border-radius: 5px; margin-bottom: 15px; padding: 15px; }
+        #configForm legend { font-weight: bold; padding: 0 10px; }
+        #configForm label { display: block; margin-bottom: 5px; font-weight: 500; }
+        #configForm input[type="text"], #configForm input[type="number"], #configForm input[type="date"], #configForm select { width: 95%; padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em; }
+        #configForm .form-row { display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 10px; }
+        #configForm .form-group { flex: 1; min-width: 150px; }
+        #configForm .radio-group label { display: inline-block; margin-right: 15px; font-weight: normal;}
+        #configForm .radio-group input[type="radio"] { margin-right: 5px; vertical-align: middle; }
+        #configForm button { padding: 10px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; margin-top: 5px; margin-right: 5px; }
+        #configForm button:hover { background-color: #0056b3; }
+        #configForm .remove-btn { background-color: #dc3545; font-size: 0.8em; padding: 5px 8px; }
+        #configForm .remove-btn:hover { background-color: #c82333; }
+        .dynamic-list-item { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; border-bottom: 1px dashed #eee; padding-bottom: 10px; margin-bottom: 10px; }
+        .dynamic-list-item div { flex: 1 1 100px; }
+        .dynamic-list-item label { margin-bottom: 2px; font-size: 0.9em; display: block; }
+        .dynamic-list-item input, .dynamic-list-item select { width: 95%; margin-bottom: 0; }
+        .dynamic-list-item input[type="color"] { width: 60px; height: 28px; padding: 2px; border: 1px solid #ccc; border-radius: 4px; vertical-align: middle; cursor: pointer;}
+        .dynamic-list-item button.remove-btn { flex-basis: auto; margin-top: 0px; max-width: 100px; align-self: flex-end; padding: 8px 10px; height: 38px; }
+
+        #weeklyScheduleGrid table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        #weeklyScheduleGrid th, #weeklyScheduleGrid td { border: 1px solid #ccc; padding: 5px; text-align: center; font-size: 0.8em; }
+        #weeklyScheduleGrid th { background-color: #f8f9fa; }
+        #weeklyScheduleGrid select { padding: 4px; font-size: 0.9em; max-width: 120px; }
+        .schedule-note { font-size: 0.85em; color: #555; margin-top: -5px; margin-bottom: 10px; }
+        .calendar-container-output { margin-top: 30px; }
+        .calendar-container-output h1, .calendar-container-output h2, .calendar-container-output h3 { text-align: center; color: #333; }
+        .calendar-container-output h3 { margin-top: 0; margin-bottom: 15px; }
+        .month-tabs { display: flex; justify-content: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-button { padding: 10px 20px; margin: 5px; border: 1px solid #ccc; background-color: #e9ecef; cursor: pointer; border-radius: 5px; font-size: 1em; transition: background-color 0.3s, color 0.3s; }
+        .tab-button:hover { background-color: #d1d5db; }
+        .tab-button.active { background-color: #007bff; color: white; border-color: #007bff; }
+        .month-calendar { display: none; }
+        .month-calendar.active-calendar { display: block; }
+
+        .calendar-container-output table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        .calendar-container-output th, .calendar-container-output td { border: 1px solid #ddd; padding: 2px; text-align: center; vertical-align: middle; font-size: 0.65em; height: 18px; position: relative; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .calendar-container-output th { background-color: #f8f9fa; font-weight: bold; height: 22px; }
+        .calendar-container-output table thead th:nth-child(1) { width: 75px; font-size: 0.6em; }
+        .calendar-container-output table thead th:nth-child(n+2):nth-child(-n+6) { width: calc((100% - 75px) * 0.115); }
+        .calendar-container-output table thead th:nth-child(n+7):nth-child(-n+8) { width: calc((100% - 75px) * 0.09); }
+        .calendar-container-output td.time-slot-label { background-color: #f8f9fa; font-weight: bold; font-size: 0.6em; white-space: normal; }
+        .date-number { position: absolute; top: 1px; right: 1px; font-size: 0.9em; color: #000; font-weight: bold; }
+        .interval-row td { background-color: #d3d3d3; color: #333; font-style: italic; height: 15px !important; padding: 1px; }
+        .interval-row td.time-slot-label { font-size: 0.6em; }
+        .inactive-day { background-color: #e9ecef !important; color: #6c757d !important; }
+        .inactive-day .subject-name { display: none; }
+        .inactive-day .date-number { color: #888 !important; font-weight: bold; }
+        .subject-name { display: block; line-height: 1; font-size: 0.9em; }
+        td.weekend, .calendar-container-output th.weekend-header { background-color: #fbfbfb; }
+        .week-start-separator > td { border-top: 2px solid #000; }
+        .holiday { background-color: #BDBDBD !important; color: #000 !important; font-weight: bold; } .holiday .subject-name { display: none; } .holiday .date-number { color: #000 !important; } .holiday-text { font-size: 0.85em; line-height: 1; }
+        .recesso-day { background-color: #E0E0E0 !important; color: #555 !important; font-style: italic; } .recesso-day .subject-name { display: none; } .recesso-day .date-number { color: #555 !important; } .recesso-text { font-size: 0.8em; display: block; line-height: 1; }
+        .retorno-recesso { background-color: #C8E6C9 !important; }
+        #saveCalendarBtn { display: block; width: calc(100% - 40px); max-width: 300px; margin: 25px auto 10px auto; padding: 12px 20px; font-size: 1.1em; background-color: #17a2b8; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #saveCalendarBtn:hover { background-color: #138496; }
+
+        #subjectSelectionModal { display:none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); animation: fadeIn 0.3s; }
+        #subjectSelectionModal .modal-content { background-color: #fefefe; margin: 8% auto; padding: 25px; border: 1px solid #888; width: 70%; max-width: 700px; border-radius: 8px; box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2); animation: slideIn 0.3s; }
+        #subjectSelectionModal #closeSubjectModalBtn { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+        #subjectSelectionModal #closeSubjectModalBtn:hover, #subjectSelectionModal #closeSubjectModalBtn:focus { color: black; text-decoration: none; }
+        #subjectSelectionModal h2 { margin-top: 0; margin-bottom: 20px; }
+        #subjectSelectionModal #subjectSearchInput { width: calc(100% - 22px); padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; }
+        #subjectSelectionModal #predefinedSubjectsListContainer { max-height: 350px; overflow-y: auto; border: 1px solid #eee; padding: 0; margin-top: 10px; }
+        #subjectSelectionModal .subject-list-item { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: center; }
+        #subjectSelectionModal .subject-list-item:last-child { border-bottom: none; }
+        #subjectSelectionModal .subject-list-item:hover:not(.disabled) { background-color: #f9f9f9; }
+        #subjectSelectionModal .subject-list-item span { font-size: 0.9em; }
+        #subjectSelectionModal .subject-list-item button { background-color:#007bff; color:white; border:none; padding: 6px 12px; border-radius:4px; cursor:pointer; font-size:0.9em; }
+        #subjectSelectionModal .subject-list-item button:hover { background-color:#0056b3; }
+        #subjectSelectionModal .subject-list-item.disabled { opacity: 0.6; cursor: not-allowed; background-color: #e9ecef; }
+        #subjectSelectionModal .subject-list-item.disabled button { display: none; }
+        #subjectSelectionModal .subject-list-item-info { flex-grow: 1; }
+        @keyframes fadeIn { from {opacity: 0;} to {opacity: 1;} }
+        @keyframes slideIn { from {transform: translateY(-50px); opacity:0;} to {transform: translateY(0); opacity:1;} }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Gerador de Calendário</h1>
+        <form id="configForm">
+             <fieldset>
+                 <legend>Informações Gerais</legend>
+                 <div class="form-row">
+                     <div class="form-group">
+                         <label for="turmaNome">Nome da Turma:</label>
+                         <input type="text" id="turmaNome" name="turmaNome" value="Engenharia de Pesca - EP2025" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="year">Ano:</label>
+                         <input type="number" id="year" name="year" value="2025" required>
+                     </div>
+                 </div>
+                 <div class="form-row">
+                     <div class="form-group">
+                         <label for="startMonth">Mês Inicial Exibição:</label>
+                         <select id="startMonth" name="startMonth">
+                             <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                             <option value="3" selected>Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                             <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+                             <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                         </select>
+                     </div>
+                     <div class="form-group">
+                         <label for="endMonth">Mês Final Exibição:</label>
+                         <select id="endMonth" name="endMonth">
+                             <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                             <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                             <option value="6">Julho</option><option value="7">Agosto</option><option value="8" selected>Setembro</option>
+                             <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                         </select>
+                     </div>
+                     <div class="form-group">
+                         <label for="classesStartDate">Data Início das Aulas:</label>
+                         <input type="date" id="classesStartDate" name="classesStartDate" value="2025-04-29" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="classesEndDate">Data Fim das Aulas:</label>
+                         <input type="date" id="classesEndDate" name="classesEndDate" value="2025-09-12" required>
+                     </div>
+                 </div>
+             </fieldset>
+             <fieldset> <legend>Turno</legend> <div class="radio-group"> <label><input type="radio" name="turno" value="manha" id="turno_manha"> Manhã (7h30 - 12h45)</label> <label><input type="radio" name="turno" value="tarde" id="turno_tarde" checked> Tarde (13h30 - 18h45)</label> </div> </fieldset>
+             <fieldset>
+                <legend>Disciplinas Regulares</legend>
+                <!-- INÍCIO DO NOVO SELETOR DE CURSO -->
+                <div class="form-row">
+                    <div class="form-group" style="flex-grow: 2;">
+                        <label for="courseSelect">Selecionar Curso (para catálogo):</label>
+                        <select id="courseSelect" name="courseSelect">
+                            <option value="EP" selected>Engenharia de Pesca</option>
+                            <option value="CB">Ciências Biológicas</option>
+                            <option value="CN">Ciências Naturais</option>
+                            <!-- Adicione mais cursos aqui se necessário -->
+                        </select>
+                    </div>
+                </div>
+                <!-- FIM DO NOVO SELETOR DE CURSO -->
+                <div id="subjectsContainer">
+                    <!-- Disciplinas adicionadas dinamicamente ou por padrão irão aqui -->
+                </div>
+                <button type="button" id="openSubjectModalBtn">Adicionar Disciplina do Catálogo</button>
+                <button type="button" id="addCustomSubjectBtn" style="background-color: #6c757d;">Adicionar Disc. Personalizada</button>
+            </fieldset>
+            <fieldset>
+                <legend>Disciplinas Intensivas</legend>
+                <div id="intensiveCoursesContainer">
+                    <!-- Linhas de disciplinas intensivas serão adicionadas aqui -->
+                </div>
+                <button type="button" id="addIntensiveCourseBtn" style="background-color: #ffc107; color: #212529;">Adicionar Disciplina Intensiva</button>
+            </fieldset>
+             <fieldset> <legend>Grade Horária Semanal Padrão (para Disciplinas Regulares)</legend> <p class="schedule-note">Selecione a disciplina para cada horário do <strong>turno selecionado acima</strong>.</p> <div id="weeklyScheduleGrid"> <table> <thead> <tr><th>Horário (Ref.)</th><th>Segunda</th><th>Terça</th><th>Quarta</th><th>Quinta</th><th>Sexta</th></tr> </thead> <tbody> <tr> <td>1ª Aula</td> <td><select name="schedule_0_0"><option value="">Vazio</option></select></td> <td><select name="schedule_1_0"><option value="">Vazio</option></select></td> <td><select name="schedule_2_0"><option value="">Vazio</option></select></td> <td><select name="schedule_3_0"><option value="">Vazio</option></select></td> <td><select name="schedule_4_0"><option value="">Vazio</option></select></td> </tr> <tr> <td>2ª Aula</td> <td><select name="schedule_0_1"><option value="">Vazio</option></select></td> <td><select name="schedule_1_1"><option value="">Vazio</option></select></td> <td><select name="schedule_2_1"><option value="">Vazio</option></select></td> <td><select name="schedule_3_1"><option value="">Vazio</option></select></td> <td><select name="schedule_4_1"><option value="">Vazio</option></select></td> </tr> <tr> <td>3ª Aula</td> <td><select name="schedule_0_2"><option value="">Vazio</option></select></td> <td><select name="schedule_1_2"><option value="">Vazio</option></select></td> <td><select name="schedule_2_2"><option value="">Vazio</option></select></td> <td><select name="schedule_3_2"><option value="">Vazio</option></select></td> <td><select name="schedule_4_2"><option value="">Vazio</option></select></td> </tr> <tr> <td>Intervalo</td> <td colspan="5" style="background-color:#e9ecef; font-style: italic;">Intervalo</td> </tr> <tr> <td>4ª Aula</td> <td><select name="schedule_0_3"><option value="">Vazio</option></select></td> <td><select name="schedule_1_3"><option value="">Vazio</option></select></td> <td><select name="schedule_2_3"><option value="">Vazio</option></select></td> <td><select name="schedule_3_3"><option value="">Vazio</option></select></td> <td><select name="schedule_4_3"><option value="">Vazio</option></select></td> </tr> <tr> <td>5ª Aula</td> <td><select name="schedule_0_4"><option value="">Vazio</option></select></td> <td><select name="schedule_1_4"><option value="">Vazio</option></select></td> <td><select name="schedule_2_4"><option value="">Vazio</option></select></td> <td><select name="schedule_3_4"><option value="">Vazio</option></select></td> <td><select name="schedule_4_4"><option value="">Vazio</option></select></td> </tr> <tr> <td>6ª Aula</td> <td><select name="schedule_0_5"><option value="">Vazio</option></select></td> <td><select name="schedule_1_5"><option value="">Vazio</option></select></td> <td><select name="schedule_2_5"><option value="">Vazio</option></select></td> <td><select name="schedule_3_5"><option value="">Vazio</option></select></td> <td><select name="schedule_4_5"><option value="">Vazio</option></select></td> </tr> </tbody> </table> </div> </fieldset>
+             <fieldset> <legend>Feriados</legend> <div id="holidaysContainer">  <div class="dynamic-list-item holiday-item"> <div><label>Data:</label><input type="date" name="holiday_date[]" value="2025-05-01" required></div> <div><label>Nome:</label><input type="text" name="holiday_name[]" value="Dia do Trabalho" required></div> <button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button> </div> <div class="dynamic-list-item holiday-item"><div><label>Data:</label><input type="date" name="holiday_date[]" value="2025-06-19" required></div><div><label>Nome:</label><input type="text" name="holiday_name[]" value="Corpus Christi" required></div><button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button></div> <div class="dynamic-list-item holiday-item"><div><label>Data:</label><input type="date" name="holiday_date[]" value="2025-08-15" required></div><div><label>Nome:</label><input type="text" name="holiday_name[]" value="Adesão do Pará" required></div><button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button></div> </div> <button type="button" id="addHolidayBtn">Adicionar Feriado</button> </fieldset>
+             <fieldset> <legend>Período de Recesso</legend> <div class="form-row"> <div class="form-group"> <label for="recessStartDate">Data Início Recesso:</label> <input type="date" id="recessStartDate" name="recessStartDate" value="2025-07-21"> </div> <div class="form-group"> <label for="recessEndDate">Data Fim Recesso:</label> <input type="date" id="recessEndDate" name="recessEndDate" value="2025-08-03"> </div> </div> </fieldset>
+            <button type="button" id="generateButton" style="width: 100%; padding: 15px; font-size: 1.2em; background-color: #28a745;">Gerar Calendário</button>
+        </form>
+
+        <div class="calendar-container-output" id="outputCalendarContainer" style="display: none;">
+             <h1 id="outputTitle">Calendário de Aulas</h1> <h2 id="outputTurmaInfo"></h2>
+            <div id="outputSaveButtonContainer"></div>
+            <div class="month-tabs" id="outputMonthTabs"></div> <div id="outputCalendars"></div>
+        </div>
+    </div>
+
+    <div id="subjectSelectionModal">
+        <div class="modal-content">
+            <span id="closeSubjectModalBtn">×</span>
+            <h2>Selecionar Disciplina do Catálogo</h2>
+            <input type="text" id="subjectSearchInput" placeholder="Buscar por código, nome ou abreviação...">
+            <div id="predefinedSubjectsListContainer">
+                <!-- A lista de disciplinas será populada aqui pelo JavaScript -->
+            </div>
+            <p style="font-size:0.9em; color: #555; margin-top:15px;">Se a disciplina não estiver na lista, feche e use "Adicionar Disc. Personalizada".</p>
+        </div>
+    </div>
+
+    <script>
+        const SHIFT_TIMES = {
+            tarde: { labels: ["13h30-14h20", "14h20-15h10", "15h10-16h00", "16h00-16h15", "16h15-17h05", "17h05-17h55", "17h55-18h45"], indices: [0, 1, 2, null, 3, 4, 5] },
+            manha: { labels: ["7h30- 8h20", "8h20-9h10", "9h10-10h", "10h-10h15", "10h15-11h05", "11h05-11h55", "11h55-12h45"], indices: [0, 1, 2, null, 3, 4, 5] }
+        };
+
+        // --- INÍCIO DAS NOVAS CONSTANTES E VARIÁVEIS PARA CARREGAMENTO DINÂMICO ---
+        const COURSE_SHEET_URLS = {
+            "EP": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGFPDLwl0paF_1WPiP4esoYRwckoAmdgAvXmB3xdFJqlsSW7IatYOoE3occv3gHN9B4Erq7G_Z0G3V/pub?gid=0&single=true&output=csv",
+            "CB": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGFPDLwl0paF_1WPiP4esoYRwckoAmdgAvXmB3xdFJqlsSW7IatYOoE3occv3gHN9B4Erq7G_Z0G3V/pub?gid=1677357176&single=true&output=csv",
+            "CN": "https://docs.google.com/spreadsheets/d/e/2PACX-1vQGFPDLwl0paF_1WPiP4esoYRwckoAmdgAvXmB3xdFJqlsSW7IatYOoE3occv3gHN9B4Erq7G_Z0G3V/pub?gid=858593150&single=true&output=csv"
+        };
+        let subjectsCache = {}; // Cache para as disciplinas carregadas por curso
+        // --- FIM DAS NOVAS CONSTANTES E VARIÁVEIS ---
+
+
+        // Referências ao DOM
+        const subjectSelectionModal = document.getElementById('subjectSelectionModal');
+        const closeSubjectModalBtn = document.getElementById('closeSubjectModalBtn');
+        const predefinedSubjectsListContainer = document.getElementById('predefinedSubjectsListContainer');
+        const subjectSearchInput = document.getElementById('subjectSearchInput');
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        const intensiveCoursesContainer = document.getElementById('intensiveCoursesContainer');
+        const courseSelect = document.getElementById('courseSelect'); // Referência ao novo select de curso
+
+
+        function getContrastYIQ(hexcolor){
+            hexcolor = hexcolor.replace("#", "");
+            if(hexcolor.length === 3) {
+                hexcolor = hexcolor.split('').map(char => char + char).join('');
+            }
+            if(hexcolor.length !== 6) return '#000000';
+            var r = parseInt(hexcolor.substr(0,2),16);
+            var g = parseInt(hexcolor.substr(2,2),16);
+            var b = parseInt(hexcolor.substr(4,2),16);
+            if(isNaN(r) || isNaN(g) || isNaN(b)) return '#000000';
+            var yiq = ((r*299)+(g*587)+(b*114))/1000;
+            return (yiq >= 128) ? '#000000' : '#FFFFFF';
+        }
+
+        // --- INÍCIO DAS FUNÇÕES PARA CARREGAR E PROCESSAR CSV ---
+        function csvToArray(csvText, courseCode) {
+            // console.log("Iniciando csvToArray para o curso:", courseCode);
+            const lines = csvText.trim().split('\n');
+
+            if (lines.length < 2) {
+                console.error("Erro no CSV: vazio ou sem cabeçalho para o curso " + courseCode + ". Linhas:", lines.length);
+                return [];
+            }
+
+            const headers = lines[0].split(',').map(header => header.trim().toLowerCase().replace(/"/g, ''));
+            // console.log("Cabeçalhos para " + courseCode + ":", headers.join(', '));
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                const values = [];
+                let currentVal = '';
+                let inQuotes = false;
+                for (let char of line) {
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(currentVal.trim());
+                        currentVal = '';
+                    } else {
+                        currentVal += char;
+                    }
+                }
+                values.push(currentVal.trim());
+
+                if (values.length !== headers.length && values.length > 0) {
+                    if (values.length > headers.length) {
+                        const numExtraFields = values.length - headers.length;
+                        const lastFieldIndex = headers.length - 1;
+                        if (lastFieldIndex >=0) {
+                            let reconstructedLastField = values[lastFieldIndex];
+                            for (let j = 1; j <= numExtraFields; j++) {
+                                reconstructedLastField += "," + values[lastFieldIndex + j];
+                            }
+                            values[lastFieldIndex] = reconstructedLastField;
+                            values.splice(lastFieldIndex + 1, numExtraFields);
+                        }
+                    } else {
+                        // console.warn(`AVISO CSV Linha ${i+1} (${courseCode}): Contagem de colunas (${values.length}) diferente dos cabeçalhos (${headers.length}). Valores: [${values.join(' | ')}]`);
+                    }
+                }
+
+                const subject = {};
+                let validRow = true;
+
+                headers.forEach((header, index) => {
+                    const value = (values[index] !== undefined ? values[index] : '').replace(/"/g, '');
+                    if (header === 'codigo') subject.code = value;
+                    else if (header === 'nome') subject.name = value;
+                    else if (header === 'abreviacao') subject.abbreviation = value;
+                    else if (header === 'ch') subject.defaultLoad = parseInt(value, 10);
+                });
+
+                if (!subject.code || subject.code.trim() === "" ||
+                    !subject.name || subject.name.trim() === "" ||
+                    !subject.abbreviation || subject.abbreviation.trim() === "" ||
+                    isNaN(subject.defaultLoad)) {
+                    // console.warn(`AVISO CSV Linha ${i+1} (${courseCode}): Dados essenciais ausentes/inválidos. Ignorando. Subject:`, JSON.stringify(subject), `Valores: [${values.join(' | ')}]`);
+                    validRow = false;
+                }
+
+                if (validRow) {
+                    subject.defaultColor = '#EEEEEE'; // Cor padrão fixa
+                    subject.course = courseCode; // Adiciona a propriedade course ao objeto
+                    subject.defaultTextColor = getContrastYIQ(subject.defaultColor);
+                    data.push(subject);
+                }
+            }
+            // console.log(`Total de ${data.length} disciplinas processadas com sucesso para ${courseCode}.`);
+            return data;
+        }
+
+        async function loadSubjectsForCourse(courseCode) {
+            if (subjectsCache[courseCode]) {
+                // console.log("Retornando disciplinas do cache para:", courseCode);
+                return subjectsCache[courseCode];
+            }
+
+            const csvUrl = COURSE_SHEET_URLS[courseCode];
+            if (!csvUrl) {
+                console.error("URL do CSV não configurado para o curso:", courseCode);
+                if(predefinedSubjectsListContainer) predefinedSubjectsListContainer.innerHTML = '<p style="padding:10px; text-align:center; color:red;">Erro: Configuração do curso ausente.</p>';
+                return [];
+            }
+
+            if(predefinedSubjectsListContainer) predefinedSubjectsListContainer.innerHTML = '<p style="padding:10px; text-align:center;">Carregando disciplinas...</p>';
+
+            try {
+                // console.log("Buscando disciplinas do CSV para:", courseCode, csvUrl);
+                const response = await fetch(csvUrl);
+                if (!response.ok) {
+                    throw new Error(`Falha ao buscar CSV para ${courseCode}: ${response.status} ${response.statusText}`);
+                }
+                const csvText = await response.text();
+                // console.log("CSV recebido para:", courseCode);
+                const subjects = csvToArray(csvText, courseCode);
+                subjectsCache[courseCode] = subjects;
+                // console.log("Disciplinas armazenadas no cache para:", courseCode, subjects.length);
+                return subjects;
+            } catch (error) {
+                console.error("Erro ao carregar/processar disciplinas para " + courseCode + ":", error);
+                if(predefinedSubjectsListContainer) predefinedSubjectsListContainer.innerHTML = '<p style="padding:10px; text-align:center; color:red;">Erro ao carregar disciplinas. Verifique o console.</p>';
+                return [];
+            }
+        }
+        // --- FIM DAS FUNÇÕES PARA CARREGAR E PROCESSAR CSV ---
+
+
+        // --- FUNÇÕES EXISTENTES MODIFICADAS OU MANTIDAS ---
+        function addEmptySubjectRow() {
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-list-item subject-item';
+            const defaultBgColor = "#EEEEEE"; // Cor padrão para personalizadas
+            const defaultTextColor = getContrastYIQ(defaultBgColor);
+            newItem.innerHTML = `
+                <div><label>Chave (ID):</label><input type="text" name="subject_key[]" required placeholder="Ex: fisicaBasica"></div>
+                <div><label>Nome Exibição:</label><input type="text" name="subject_name[]" required placeholder="Ex: Física Básica"></div>
+                <div><label>Carga (h):</label><input type="number" name="subject_load[]" value="45" required min="1"></div>
+                <div><label>Cor Fundo:</label><input type="color" name="subject_bgcolor[]" value="${defaultBgColor}"></div>
+                <div><label>Cor Texto:</label><input type="color" name="subject_textcolor[]" value="${defaultTextColor}"></div>
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button>`;
+            subjectsContainer.appendChild(newItem);
+            addEventListenersToColorPickers(newItem);
+            updateScheduleSelectOptions();
+        }
+
+        function addSubjectRowFromPredefined(subjectData) { // subjectData agora vem do CSV
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-list-item subject-item';
+            // Usa as propriedades do objeto subjectData carregado do CSV
+            const bgColor = subjectData.defaultColor || '#EEEEEE';
+            const textColor = subjectData.defaultTextColor || getContrastYIQ(bgColor);
+            newItem.innerHTML = `
+                <div><label>Chave (ID):</label><input type="text" name="subject_key[]" value="${subjectData.code}" required readonly></div>
+                <div><label>Nome Exibição:</label><input type="text" name="subject_name[]" value="${subjectData.abbreviation}" required></div>
+                <div><label>Carga (h):</label><input type="number" name="subject_load[]" value="${subjectData.defaultLoad || ''}" required min="1"></div>
+                <div><label>Cor Fundo:</label><input type="color" name="subject_bgcolor[]" value="${bgColor}"></div>
+                <div><label>Cor Texto:</label><input type="color" name="subject_textcolor[]" value="${textColor}"></div>
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button> `;
+            subjectsContainer.appendChild(newItem);
+            addEventListenersToColorPickers(newItem);
+            updateScheduleSelectOptions();
+            // Após adicionar, repopular a lista do modal para marcar como "adicionada"
+            const selectedCourse = courseSelect.value;
+            if (subjectsCache[selectedCourse]) {
+                 populatePredefinedSubjectsList(subjectsCache[selectedCourse], subjectSearchInput.value);
+            }
+        }
+
+        function addEventListenersToColorPickers(itemElement) {
+            const bgColorPicker = itemElement.querySelector('input[name="subject_bgcolor[]"]');
+            const textColorPicker = itemElement.querySelector('input[name="subject_textcolor[]"]');
+            if (bgColorPicker && textColorPicker) {
+                bgColorPicker.addEventListener('input', function() {
+                    textColorPicker.value = getContrastYIQ(this.value);
+                });
+            }
+        }
+
+        function addHolidayRow() {
+            const container = document.getElementById('holidaysContainer');
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-list-item holiday-item';
+            newItem.innerHTML = `
+                <div><label>Data:</label><input type="date" name="holiday_date[]" required></div>
+                <div><label>Nome:</label><input type="text" name="holiday_name[]" required></div>
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button>`;
+            container.appendChild(newItem);
+        }
+
+        function removeListItem(button) {
+            const item = button.closest('.dynamic-list-item');
+            const isSubjectItem = item.classList.contains('subject-item');
+            const subjectKeyInput = isSubjectItem ? item.querySelector('input[name="subject_key[]"]') : null;
+            const removedKey = subjectKeyInput ? subjectKeyInput.value : null;
+
+            item.remove();
+            if (isSubjectItem) {
+                updateScheduleSelectOptions();
+                // Se um item de disciplina foi removido, atualize a lista do modal para que ele apareça como selecionável novamente
+                if (removedKey && subjectSelectionModal.style.display === 'block') {
+                    const selectedCourse = courseSelect.value;
+                    if (subjectsCache[selectedCourse]) {
+                        populatePredefinedSubjectsList(subjectsCache[selectedCourse], subjectSearchInput.value);
+                    }
+                }
+            }
+        }
+        function updateIntensiveCourseSubjectSelects() {
+            let subjectOptions = '<option value="">Selecione...</option>';
+            subjectsContainer.querySelectorAll('.subject-item').forEach(item => {
+                const keyInput = item.querySelector('input[name="subject_key[]"]');
+                const nameInput = item.querySelector('input[name="subject_name[]"]');
+                if (keyInput && nameInput && keyInput.value.trim()) {
+                    subjectOptions += `<option value="${keyInput.value.trim()}">${nameInput.value || keyInput.value} (${keyInput.value.trim()})</option>`;
+                }
+            });
+            document.querySelectorAll('select[name="intensive_subject_key[]"]').forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = subjectOptions;
+                if (Array.from(select.options).some(opt => opt.value === currentValue)) {
+                    select.value = currentValue;
+                } else {
+                    select.value = "";
+                }
+            });
+        }
+
+        function addIntensiveCourseRow() {
+            const newItem = document.createElement('div');
+            newItem.className = 'dynamic-list-item intensive-course-item';
+            let subjectOptions = '<option value="">Selecione...</option>';
+            subjectsContainer.querySelectorAll('.subject-item').forEach(item => {
+                const keyInput = item.querySelector('input[name="subject_key[]"]');
+                const nameInput = item.querySelector('input[name="subject_name[]"]');
+                if (keyInput && nameInput && keyInput.value.trim()) {
+                    subjectOptions += `<option value="${keyInput.value.trim()}">${nameInput.value || keyInput.value} (${keyInput.value.trim()})</option>`;
+                }
+            });
+            newItem.innerHTML = `
+                <div style="flex-grow: 2;"><label>Disciplina:</label><select name="intensive_subject_key[]" required>${subjectOptions}</select></div>
+                <div><label>Data Início:</label><input type="date" name="intensive_start_date[]" required></div>
+                <div><label>Data Fim:</label><input type="date" name="intensive_end_date[]" required></div>
+                <div style="flex-grow: 0.5;"><label title="Quantas aulas do turno esta disciplina ocupará por dia (1-6)">Aulas/Dia:</label><input type="number" name="intensive_slots_per_day[]" min="1" max="6" value="6" title="Quantas aulas do turno esta disciplina ocupará por dia no período intensivo. Ex: 6 para todas as aulas do turno."></div>
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">Remover</button> `;
+            intensiveCoursesContainer.appendChild(newItem);
+        }
+
+        function updateScheduleSelectOptions() {
+            const currentSubjectItems = subjectsContainer.querySelectorAll('.subject-item');
+            const scheduleSelects = document.querySelectorAll('#weeklyScheduleGrid select');
+            let optionsHtml = '<option value="">Vazio</option>';
+            currentSubjectItems.forEach(item => {
+                const keyInput = item.querySelector('input[name="subject_key[]"]');
+                const nameInput = item.querySelector('input[name="subject_name[]"]');
+                if (keyInput && nameInput && keyInput.value.trim()) {
+                    optionsHtml += `<option value="${keyInput.value.trim()}">${nameInput.value || keyInput.value} (${keyInput.value.trim()})</option>`;
+                }
+            });
+            scheduleSelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = optionsHtml;
+                if (Array.from(select.options).some(opt => opt.value === currentValue)) {
+                    select.value = currentValue;
+                } else {
+                    select.value = "";
+                }
+            });
+            updateIntensiveCourseSubjectSelects();
+        }
+
+        function getAlreadyAddedSubjectKeys() {
+            const addedKeys = [];
+            subjectsContainer.querySelectorAll('.subject-item input[name="subject_key[]"]').forEach(input => {
+                if (input.value.trim()) {
+                    addedKeys.push(input.value.trim());
+                }
+            });
+            return addedKeys;
+        }
+
+        // MODIFICADA: populatePredefinedSubjectsList
+        function populatePredefinedSubjectsList(subjectsArray, searchTerm = '') {
+            if (!predefinedSubjectsListContainer) return; // Segurança
+            predefinedSubjectsListContainer.innerHTML = '';
+            const alreadyAddedKeys = getAlreadyAddedSubjectKeys();
+            let foundSubjects = 0;
+            const term = searchTerm.toLowerCase().trim();
+
+            if (!subjectsArray || subjectsArray.length === 0) {
+                predefinedSubjectsListContainer.innerHTML = '<p style="padding: 10px; text-align:center; color:#777;">Nenhuma disciplina disponível para este curso ou filtro.</p>';
+                return;
+            }
+
+            subjectsArray.forEach(subject => {
+                const isMatch = term === '' ||
+                                (subject.code && subject.code.toLowerCase().includes(term)) ||
+                                (subject.name && subject.name.toLowerCase().includes(term)) ||
+                                (subject.abbreviation && subject.abbreviation.toLowerCase().includes(term));
+
+                if (isMatch) {
+                    foundSubjects++;
+                    const subjectDiv = document.createElement('div');
+                    subjectDiv.className = 'subject-list-item';
+                    const isAdded = alreadyAddedKeys.includes(subject.code);
+
+                    if (isAdded) subjectDiv.classList.add('disabled');
+
+                    let htmlContent = `<div class="subject-list-item-info"><strong>${subject.code}</strong> - ${subject.name} (<em>${subject.abbreviation}</em>) <span style="color: #555; font-size:0.85em;"> CH: ${subject.defaultLoad || 'N/A'}h</span></div>`;
+                    if (isAdded) {
+                        htmlContent += `<span style="color:grey; font-style:italic;">Já adicionada</span>`;
+                    } else {
+                        htmlContent += `<button type="button">Selecionar</button>`;
+                    }
+                    subjectDiv.innerHTML = htmlContent;
+
+                    if (!isAdded) {
+                        const selectButton = subjectDiv.querySelector('button');
+                        if (selectButton) {
+                             selectButton.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                addSubjectRowFromPredefined(subject);
+                                subjectSelectionModal.style.display = 'none';
+                            });
+                        }
+                        subjectDiv.addEventListener('click', () => {
+                            if (!subjectDiv.classList.contains('disabled')) {
+                                addSubjectRowFromPredefined(subject);
+                                subjectSelectionModal.style.display = 'none';
+                            }
+                        });
+                    }
+                    predefinedSubjectsListContainer.appendChild(subjectDiv);
+                }
+            });
+
+            if (foundSubjects === 0 && subjectsArray.length > 0) {
+                predefinedSubjectsListContainer.innerHTML = '<p style="padding: 10px; text-align:center; color:#777;">Nenhuma disciplina encontrada para o termo buscado.</p>';
+            }
+        }
+
+        // MODIFICADA: openSubjectSelectionModal
+        async function openSubjectSelectionModal() {
+            subjectSearchInput.value = '';
+            const selectedCourse = courseSelect.value;
+
+            if (!selectedCourse) {
+                console.error("Nenhum curso selecionado para abrir o modal.");
+                if(predefinedSubjectsListContainer) predefinedSubjectsListContainer.innerHTML = '<p style="padding:10px; text-align:center; color:red;">Por favor, selecione um curso primeiro no formulário principal.</p>';
+                subjectSelectionModal.style.display = 'block';
+                return;
+            }
+
+            const subjectsForCourse = await loadSubjectsForCourse(selectedCourse);
+            populatePredefinedSubjectsList(subjectsForCourse);
+
+            subjectSelectionModal.style.display = 'block';
+            subjectSearchInput.focus();
+        }
+        // --- FIM DAS FUNÇÕES MODIFICADAS ---
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.getElementById('openSubjectModalBtn').addEventListener('click', openSubjectSelectionModal);
+            document.getElementById('addCustomSubjectBtn').addEventListener('click', addEmptySubjectRow);
+            document.getElementById('addHolidayBtn').addEventListener('click', addHolidayRow);
+            document.getElementById('addIntensiveCourseBtn').addEventListener('click', addIntensiveCourseRow);
+            if(closeSubjectModalBtn) closeSubjectModalBtn.addEventListener('click', () => subjectSelectionModal.style.display = 'none');
+            window.addEventListener('click', (event) => { if (event.target == subjectSelectionModal) { subjectSelectionModal.style.display = 'none'; } });
+
+            // NOVOS LISTENERS
+            if(subjectSearchInput) {
+                subjectSearchInput.addEventListener('input', async () => {
+                    const selectedCourse = courseSelect.value;
+                    const searchTerm = subjectSearchInput.value;
+                    const subjectsForCourse = await loadSubjectsForCourse(selectedCourse); // Pode vir do cache
+                    populatePredefinedSubjectsList(subjectsForCourse, searchTerm);
+                });
+            }
+
+            if (courseSelect) {
+                courseSelect.addEventListener('change', async () => {
+                    const selectedCourse = courseSelect.value;
+                    await loadSubjectsForCourse(selectedCourse); // Carrega ou busca do cache
+                    if (subjectSelectionModal.style.display === 'block') { // Se modal estiver aberto, atualiza
+                        const subjects = subjectsCache[selectedCourse] || [];
+                        populatePredefinedSubjectsList(subjects, subjectSearchInput.value);
+                    }
+                    // ADVERTÊNCIA: Mudar o curso aqui pode invalidar disciplinas já adicionadas.
+                    // Considere adicionar uma lógica para alertar o usuário ou limpar `subjectsContainer`.
+                    // Por exemplo:
+                    // if (subjectsContainer.children.length > 0) {
+                    //    if (confirm("Mudar o curso pode invalidar as disciplinas já adicionadas. Deseja limpar as disciplinas e a grade horária?")) {
+                    //        subjectsContainer.innerHTML = '';
+                    //        const scheduleSelects = document.querySelectorAll('#weeklyScheduleGrid select');
+                    //        scheduleSelects.forEach(select => select.value = "");
+                    //        updateScheduleSelectOptions();
+                    //    }
+                    // }
+                });
+            }
+
+            updateScheduleSelectOptions(); // Chama para inicializar os selects da grade vazios
+            document.getElementById('generateButton').addEventListener('click', generateFromForm);
+
+            // Pré-carregar disciplinas do curso inicial
+            if (courseSelect && courseSelect.value) {
+                loadSubjectsForCourse(courseSelect.value).then(initialSubjects => {
+                    if (initialSubjects && initialSubjects.length > 0) {
+                         console.log(initialSubjects.length + " disciplinas pré-carregadas para " + courseSelect.value);
+                         // Se você quiser recriar o preenchimento de exemplo:
+                         // 1. Adicione as disciplinas de exemplo ao `subjectsContainer` programaticamente:
+                         //    const demoCodes = ["EP05001", "EP05007", "EP05004", "EP05005", "EP05006", "EP05002", "EP05003"];
+                         //    const currentCourseSubjects = subjectsCache[courseSelect.value] || [];
+                         //    demoCodes.forEach(code => {
+                         //        const subjectData = currentCourseSubjects.find(s => s.code === code);
+                         //        if (subjectData) addSubjectRowFromPredefined(subjectData);
+                         //    });
+                         // 2. Chame prefillAfternoonSchedule() se ele ainda for relevante
+                         // prefillAfternoonSchedule(); // Certifique-se que as disciplinas estão nos selects da grade
+                    }
+                });
+            }
+             // A função prefillAfternoonSchedule original não vai funcionar sem as disciplinas de exemplo
+             // adicionadas ao subjectsContainer e, consequentemente, aos selects da grade horária.
+             // prefillAfternoonSchedule(); // Comentado por enquanto
+        });
+
+        // Função de preenchimento de exemplo (COMENTADA - requer ajuste para nova lógica)
+        /*
+        function prefillAfternoonSchedule() {
+            // Esta função precisa que as disciplinas (EP05001, etc.) já existam
+            // nos <select> da grade horária, o que significa que elas devem ter sido
+            // adicionadas ao subjectsContainer primeiro.
+            const afternoonSchedule = { "schedule_0_0": "EP05007", "schedule_0_1": "EP05007", "schedule_0_2": "EP05007", "schedule_0_3": "EP05006", "schedule_0_4": "EP05006", "schedule_0_5": "", "schedule_1_0": "EP05004", "schedule_1_1": "EP05004", "schedule_1_2": "EP05004", "schedule_1_3": "EP05005", "schedule_1_4": "EP05005", "schedule_1_5": "", "schedule_2_0": "EP05007", "schedule_2_1": "EP05007", "schedule_2_2": "EP05007", "schedule_2_3": "EP05002", "schedule_2_4": "EP05002", "schedule_2_5": "EP05002", "schedule_3_0": "EP05004", "schedule_3_1": "EP05004", "schedule_3_2": "EP05004", "schedule_3_3": "EP05003", "schedule_3_4": "EP05003", "schedule_3_5": "EP05003", "schedule_4_0": "EP05001", "schedule_4_1": "EP05001", "schedule_4_2": "EP05001", "schedule_4_3": "EP05001", "schedule_4_4": "EP05005", "schedule_4_5": "EP05005" };
+            for (const name in afternoonSchedule) {
+                const select = document.querySelector(`#weeklyScheduleGrid select[name="${name}"]`);
+                if (select) {
+                    // Verifica se a opção existe antes de definir
+                    if (Array.from(select.options).some(opt => opt.value === afternoonSchedule[name])) {
+                        select.value = afternoonSchedule[name];
+                    } else if (afternoonSchedule[name] === "") {
+                        select.value = ""; // Para limpar
+                    } else {
+                        console.warn(`Tentativa de preencher grade com disciplina ${afternoonSchedule[name]} que não está nas opções do select ${name}`);
+                    }
+                }
+            }
+        }
+        */
+
+
+        // --- Geração do Calendário (Funções generateFromForm, readAndValidateForm, downloadCalendarHtml) ---
+        // Estas funções (generateFromForm, readAndValidateForm, downloadCalendarHtml)
+        // permanecem LARGAMENTE IGUAIS à v31.2, pois a estrutura dos dados
+        // das disciplinas no formulário (após serem adicionadas) não mudou.
+        // Apenas certifique-se de que elas não dependem de PREDEFINED_SUBJECTS.
+        // Vou colar as versões da v31.2 aqui para completude, elas devem funcionar.
+
+        let completedSubjectLoads = {};
+        function generateFromForm() {
+            // console.log("DEBUG: generateFromForm called.");
+            const formEl = document.getElementById('configForm');
+            const outputContainer = document.getElementById('outputCalendarContainer');
+            const outputCalendarsDiv = document.getElementById('outputCalendars');
+            const outputTabsDiv = document.getElementById('outputMonthTabs');
+            const saveButtonContainer = document.getElementById('outputSaveButtonContainer');
+            outputCalendarsDiv.innerHTML = ''; outputTabsDiv.innerHTML = ''; saveButtonContainer.innerHTML = '';
+
+            let config = {};
+            try {
+                config = readAndValidateForm(formEl);
+                if (!config) return;
+
+                completedSubjectLoads = {};
+                for (const key in config.subjects) {
+                    completedSubjectLoads[key] = 0;
+                }
+                // console.log("DEBUG: Initial completedSubjectLoads:", completedSubjectLoads);
+
+                function getSubjectByKey(key) { return config.subjects[key] || null; }
+                function isClassDay(date) {
+                    try {
+                        if (!date || !(date instanceof Date) || isNaN(date)) return false;
+                        const checkDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                        const startDateOnly = new Date(config.classesStartDate.getFullYear(), config.classesStartDate.getMonth(), config.classesStartDate.getDate());
+                        const endDateOnly = config.classesEndDate ? new Date(config.classesEndDate.getFullYear(), config.classesEndDate.getMonth(), config.classesEndDate.getDate()) : null;
+
+                        if (checkDateOnly < startDateOnly) return false;
+                        if (endDateOnly && checkDateOnly > endDateOnly) return false;
+
+                        const dayOfWeek = date.getDay();
+                        if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+
+                        const dateKeyForHolidayCheck = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+                        if (config.holidays[dateKeyForHolidayCheck]) return false;
+
+                        if (config.recess) {
+                            const recessStartDateOnly = new Date(config.recess.start.getFullYear(), config.recess.start.getMonth(), config.recess.start.getDate());
+                            const recessEndDateOnly = new Date(config.recess.end.getFullYear(), config.recess.end.getMonth(), config.recess.end.getDate());
+                            if (checkDateOnly >= recessStartDateOnly && checkDateOnly <= recessEndDateOnly) return false;
+                        }
+                        return true;
+                    } catch (e) { console.error("Error in isClassDay:", date, e); return false; }
+                }
+                function formatDateKey(date) { try { if (!date || !(date instanceof Date) || isNaN(date)) { return "invalid-date";} const day = String(date.getDate()).padStart(2, '0'); const month = String(date.getMonth() + 1).padStart(2, '0'); const year = date.getFullYear(); return `${year}-${month}-${day}`; } catch (e) { console.error("Error formatting date:", date, e); return "invalid-date"; } }
+                function createTableCell(content, cssClass = "", dateNumber = null, isFirstSlot = false, styleString = "") { let dateSpan = ""; if (dateNumber !== null && isFirstSlot) { dateSpan = `<span class="date-number">${dateNumber}</span>`; } const safeContent = content || ""; const styleAttr = styleString ? ` style="${styleString}"` : ""; return `<td class="${cssClass.trim()}"${styleAttr}>${dateSpan}${safeContent}</td>`; }
+
+                const allMonthsData = {};
+                const loopStartDate = new Date(config.year, config.startMonth, 1);
+                const loopEndDate = new Date(config.year, config.endMonth + 1, 0);
+                const timeSlots = SHIFT_TIMES[config.turno].labels;
+                const timeIndices = SHIFT_TIMES[config.turno].indices;
+
+                for (let dt = new Date(loopStartDate); dt <= loopEndDate; dt.setDate(dt.getDate() + 1)) {
+                    const currentFullDate = new Date(dt);
+                    const dateKey = formatDateKey(currentFullDate);
+                    const dateKeyForHolidayCheck = `${String(currentFullDate.getDate()).padStart(2, '0')}/${String(currentFullDate.getMonth() + 1).padStart(2, '0')}/${currentFullDate.getFullYear()}`;
+                    allMonthsData[dateKey] = [];
+                    const holidayInfo = config.holidays[dateKeyForHolidayCheck];
+                    const isRecess = config.recess && currentFullDate >= config.recess.start && currentFullDate <= config.recess.end;
+                    const dayOfWeek = currentFullDate.getDay();
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                    const isDayForClass = isClassDay(currentFullDate);
+
+                    if (!isDayForClass) {
+                         let type = 'inactive_day'; let content = ''; let cssClass = 'inactive-day';
+                         if (holidayInfo) { type = 'holiday'; content = `<span class="holiday-text">${holidayInfo}</span>`; cssClass = 'holiday'; }
+                         else if (isRecess) { type = 'recess'; content = '<span class="recesso-text">Recesso</span>'; cssClass = 'recesso-day'; }
+                         else if (isWeekend) { type = 'weekend'; cssClass = 'weekend'; }
+                         for (let slotIdx = 0; slotIdx < timeSlots.length; slotIdx++) { allMonthsData[dateKey].push({ type: type, content: content, cssClass: cssClass, style: '' }); } continue;
+                    }
+
+                    for (let slotIdx = 0; slotIdx < timeSlots.length; slotIdx++) {
+                        const currentAulaIndex = timeIndices[slotIdx];
+                        let slotData = { type: 'empty', content: '', cssClass: '', style: '' };
+                        let slotFilled = false;
+                        if (currentAulaIndex === null) { slotData = { type: 'interval', content: 'Intervalo', cssClass: '', style: '' }; slotFilled = true; }
+                        else {
+                            for (const intensiveCourse of config.intensiveCourses) { if (currentFullDate >= intensiveCourse.startDate && currentFullDate <= intensiveCourse.endDate) { const subject = getSubjectByKey(intensiveCourse.key); if (subject && currentAulaIndex < intensiveCourse.slotsPerDay) { if (completedSubjectLoads[intensiveCourse.key] < subject.carga) { completedSubjectLoads[intensiveCourse.key]++; slotData = { type: 'intensive', key: intensiveCourse.key, content: `<span class="subject-name">${subject.nome} (Int.)</span>`, cssClass: '', style: `background-color: ${subject.bgColor}; color: ${subject.textColor};` }; } else { slotData = { type: 'empty', content: '', cssClass: '', style: '' }; } slotFilled = true; break; } } }
+                            if (!slotFilled) { const scheduleDayIndex = dayOfWeek - 1; if (scheduleDayIndex >= 0 && scheduleDayIndex <= 4) { const subjectKeyRegular = config.weeklySchedule[scheduleDayIndex]?.[currentAulaIndex]; if(subjectKeyRegular){ const subjectRegular = getSubjectByKey(subjectKeyRegular); if(subjectRegular){ let subjectIsCurrentlyIntensive = false; for (const ic of config.intensiveCourses) { if (ic.key === subjectKeyRegular && currentFullDate >= ic.startDate && currentFullDate <= ic.endDate) { subjectIsCurrentlyIntensive = true; break; } } if (!subjectIsCurrentlyIntensive) { if (completedSubjectLoads[subjectKeyRegular] < subjectRegular.carga) { completedSubjectLoads[subjectKeyRegular]++; slotData = { type: 'subject', key: subjectKeyRegular, content: `<span class="subject-name">${subjectRegular.nome}</span>`, cssClass: '', style: `background-color: ${subjectRegular.bgColor}; color: ${subjectRegular.textColor};` }; } else { slotData = { type: 'empty', content: '', cssClass: '', style: '' }; } } } } } }
+                        }
+                        allMonthsData[dateKey].push(slotData);
+                    }
+                }
+
+                outputCalendarsDiv.innerHTML = ''; outputTabsDiv.innerHTML = '';
+                let firstTab = true;
+                for (let m = config.startMonth; m <= config.endMonth; m++) {
+                    let monthName = config.monthNames[m];
+                    const monthId = `calendar-${monthName.toLowerCase().replace(/ç/g, 'c').replace(/ã/g, 'a')}`;
+                    const tabId = monthName.toLowerCase().replace(/ç/g, 'c').replace(/ã/g, 'a');
+                    const tabButton = document.createElement('button'); tabButton.className = 'tab-button'; tabButton.setAttribute('data-month', tabId); tabButton.textContent = monthName; outputTabsDiv.appendChild(tabButton);
+                    const monthDiv = document.createElement('div'); monthDiv.id = monthId; monthDiv.className = 'month-calendar'; outputCalendarsDiv.appendChild(monthDiv);
+
+                    let tableHtml = `<h3>${monthName} ${config.year}</h3><table><thead><tr><th>Horário</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th class="weekend-header">Sáb</th><th class="weekend-header">Dom</th></tr></thead><tbody>`;
+                    const firstDayOfMonth = new Date(config.year, m, 1);
+                    const daysInMonth = new Date(config.year, m + 1, 0).getDate();
+                    let startingTableDay = firstDayOfMonth.getDay(); if (startingTableDay === 0) startingTableDay = 7;
+                    let currentDayInGrid = 1 - (startingTableDay - 1);
+
+                    for (let weekRow = 0; weekRow < 6; weekRow++) {
+                         if (currentDayInGrid > daysInMonth && weekRow > 0) break;
+                        for (let slotIdx = 0; slotIdx < timeSlots.length; slotIdx++) {
+                            const timeLabel = timeSlots[slotIdx];
+                            let rowClassesList = [];
+                            if (slotIdx === 0) rowClassesList.push("week-start-separator");
+                            if (timeIndices[slotIdx] === null) rowClassesList.push("interval-row");
+                            let rowClassAttribute = rowClassesList.length > 0 ? ` class="${rowClassesList.join(" ")}"` : "";
+                            tableHtml += `<tr${rowClassAttribute}><td class="time-slot-label">${timeLabel}</td>`;
+
+                            for (let dayOfWeekInTable = 1; dayOfWeekInTable <= 7; dayOfWeekInTable++) {
+                                const cellDateNumberForCalc = currentDayInGrid + (dayOfWeekInTable - 1);
+                                const cellDate = new Date(config.year, m, cellDateNumberForCalc, 12, 0, 0);
+                                const dateKey = formatDateKey(cellDate);
+                                let displayDateNumber = null;
+                                let cellContent = '';
+                                let cellCssClass = '';
+                                let styleAttribute = '';
+                                const belongsToCurrentMonth = (cellDate.getFullYear() === config.year && cellDate.getMonth() === m && cellDateNumberForCalc >= 1 && cellDateNumberForCalc <= daysInMonth);
+                                const cellData = allMonthsData[dateKey]?.[slotIdx];
+
+                                if (belongsToCurrentMonth) {
+                                    displayDateNumber = cellDate.getDate();
+                                    if (cellData) {
+                                        cellContent = cellData.content; cellCssClass = cellData.cssClass || ''; styleAttribute = cellData.style || '';
+                                        if (!cellCssClass && cellData.type === 'weekend') cellCssClass = 'weekend';
+                                    }
+                                    if (dayOfWeekInTable >= 6 && !cellCssClass.includes('weekend') && cellCssClass !== 'holiday' && cellCssClass !== 'recesso-day') {
+                                        cellCssClass += ' weekend';
+                                    }
+                                } else {
+                                    cellCssClass = 'inactive-day';
+                                    if (dayOfWeekInTable >= 6) cellCssClass += ' weekend';
+                                    displayDateNumber = cellDate.getDate(); cellContent = ''; styleAttribute = '';
+                                }
+                                tableHtml += createTableCell(cellContent, cellCssClass.trim(), displayDateNumber, slotIdx === 0, styleAttribute);
+                            }
+                            tableHtml += `</tr>`;
+                        }
+                         currentDayInGrid += 7;
+                    }
+                    tableHtml += `</tbody></table>`;
+                    monthDiv.innerHTML = tableHtml;
+                    if (firstTab) { tabButton.classList.add('active'); monthDiv.classList.add('active-calendar'); firstTab = false; }
+                }
+
+                 document.getElementById('outputTurmaInfo').textContent = `Turma: ${config.turmaNome} - Ano: ${config.year}`;
+                 document.getElementById('outputTitle').style.display = 'block';
+                 const saveButton = document.createElement('button'); saveButton.id = 'saveCalendarBtn'; saveButton.textContent = 'Salvar Calendário HTML'; saveButton.onclick = () => downloadCalendarHtml(config); saveButtonContainer.appendChild(saveButton);
+                 outputContainer.style.display = 'block';
+                 const newTabs = outputTabsDiv.querySelectorAll('.tab-button'); const newCalendars = outputCalendarsDiv.querySelectorAll('.month-calendar');
+                 newTabs.forEach(tab => { tab.addEventListener('click', function () { newTabs.forEach(t => t.classList.remove('active')); newCalendars.forEach(c => c.classList.remove('active-calendar')); this.classList.add('active'); const monthId = 'calendar-' + this.getAttribute('data-month'); const calendarDiv = document.getElementById(monthId); if (calendarDiv) { calendarDiv.classList.add('active-calendar'); } }); });
+                 // console.log("DEBUG: Generation complete.");
+                 // console.log("Carga Horária Cumprida ao Final:", completedSubjectLoads);
+
+            } catch (error) { console.error("Error during generation process:", error); alert("Ocorreu um erro ao gerar o calendário. Verifique o console (F12)."); outputContainer.style.display = 'none'; }
+        }
+
+        function readAndValidateForm(formElement) {
+            const formData = new FormData(formElement);
+            const config = {
+                subjects: {}, weeklySchedule: { 0:{}, 1:{}, 2:{}, 3:{}, 4:{} }, holidays: {}, recess: {}, intensiveCourses: [],
+                monthNames: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+                classesStartDate: null, classesEndDate: null
+            };
+            try {
+                config.turmaNome = formData.get('turmaNome'); config.year = parseInt(formData.get('year'), 10); config.startMonth = parseInt(formData.get('startMonth'), 10); config.endMonth = parseInt(formData.get('endMonth'), 10);
+                const startDateValue = formData.get('classesStartDate'); if (!startDateValue) throw new Error("Data de início das aulas é obrigatória.");
+                const partsStart = startDateValue.split('-'); config.classesStartDate = new Date(partsStart[0], parseInt(partsStart[1], 10) - 1, partsStart[2]);
+                 if (isNaN(config.classesStartDate.getTime())) { throw new Error("Data de início das aulas inválida."); }
+
+                const endDateValue = formData.get('classesEndDate'); if (!endDateValue) throw new Error("Data de fim das aulas é obrigatória.");
+                const partsEnd = endDateValue.split('-'); config.classesEndDate = new Date(partsEnd[0], parseInt(partsEnd[1], 10) - 1, partsEnd[2], 23, 59, 59, 999);
+                 if (isNaN(config.classesEndDate.getTime())) { throw new Error("Data de fim das aulas inválida."); }
+
+                 const startDateOnly = new Date(config.classesStartDate.getFullYear(), config.classesStartDate.getMonth(), config.classesStartDate.getDate());
+                 const endDateOnly = new Date(config.classesEndDate.getFullYear(), config.classesEndDate.getMonth(), config.classesEndDate.getDate());
+                 if (endDateOnly < startDateOnly) { throw new Error("Data de fim das aulas não pode ser anterior à data de início."); }
+
+                config.turno = formElement.querySelector('input[name="turno"]:checked')?.value; if (!config.turmaNome || isNaN(config.year) || isNaN(config.startMonth) || isNaN(config.endMonth) || !config.turno) { throw new Error("Informações gerais ou de turno inválidas ou ausentes."); } if (!SHIFT_TIMES[config.turno]) throw new Error("Turno selecionado inválido."); config.timeSlotsLabels = SHIFT_TIMES[config.turno].labels; config.subjectTimeSlotIndices = SHIFT_TIMES[config.turno].indices;
+                const subjectKeys = formData.getAll('subject_key[]'); const subjectNames = formData.getAll('subject_name[]'); const subjectLoads = formData.getAll('subject_load[]'); const subjectBgColors = formData.getAll('subject_bgcolor[]'); const subjectTextColors = formData.getAll('subject_textcolor[]'); if (subjectKeys.length === 0 && formData.getAll('intensive_subject_key[]').length === 0) { throw new Error("Adicione ao menos uma disciplina regular ou intensiva."); } for(let i = 0; i < subjectKeys.length; i++) { const key = subjectKeys[i].trim(); const load = parseInt(subjectLoads[i], 10); if (!key || !subjectNames[i] || isNaN(load) || load <= 0 || !subjectBgColors[i] || !subjectTextColors[i]) { throw new Error(`Dados inválidos para a disciplina regular "${subjectNames[i] || `item ${i+1}`}". Verifique chave, nome, carga horária e cores.`); } if (config.subjects[key]) { throw new Error(`Chave (ID) de disciplina duplicada: ${key}. Remova uma das duplicatas.`); } config.subjects[key] = { nome: subjectNames[i], carga: load, bgColor: subjectBgColors[i], textColor: subjectTextColors[i] }; }
+                const intensiveSubjectKeys = formData.getAll('intensive_subject_key[]'); const intensiveStartDates = formData.getAll('intensive_start_date[]'); const intensiveEndDates = formData.getAll('intensive_end_date[]'); const intensiveSlotsPerDay = formData.getAll('intensive_slots_per_day[]'); for (let i = 0; i < intensiveSubjectKeys.length; i++) { const key = intensiveSubjectKeys[i]; const startDateStr = intensiveStartDates[i]; const endDateStr = intensiveEndDates[i]; const slots = parseInt(intensiveSlotsPerDay[i], 10); if (!key || !startDateStr || !endDateStr || isNaN(slots) || slots < 1 || slots > 6 ) { throw new Error(`Dados inválidos para a disciplina intensiva ${i + 1}. Verifique disciplina, datas e aulas/dia (1-6).`); } if (!config.subjects[key]) { throw new Error(`Disciplina intensiva "${key}" não encontrada na lista de disciplinas regulares. Adicione-a primeiro lá.`); } const iPartsStart = startDateStr.split('-'); const iPartsEnd = endDateStr.split('-'); const startDate = new Date(iPartsStart[0], parseInt(iPartsStart[1],10)-1, iPartsStart[2]); const endDate = new Date(iPartsEnd[0], parseInt(iPartsEnd[1],10)-1, iPartsEnd[2], 23, 59, 59, 999); if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) { throw new Error(`Datas inválidas para a disciplina intensiva ${config.subjects[key]?.nome || key}.`); } if (startDate > endDate) { throw new Error(`Data de início não pode ser posterior à data de fim para a disciplina intensiva ${config.subjects[key]?.nome || key}.`); } config.intensiveCourses.push({ key: key, startDate: startDate, endDate: endDate, slotsPerDay: slots });}
+                const scheduleSelects = formElement.querySelectorAll('#weeklyScheduleGrid select'); scheduleSelects.forEach(select => { const name = select.name; const parts = name.split('_'); const dayIndex = parseInt(parts[1], 10); const timeIndex = parseInt(parts[2], 10); const subjectKey = select.value || null; if (!isNaN(dayIndex) && !isNaN(timeIndex) && dayIndex >= 0 && dayIndex <=4 && timeIndex >= 0 && timeIndex <=5) { if(!config.weeklySchedule[dayIndex]) config.weeklySchedule[dayIndex] = {}; config.weeklySchedule[dayIndex][timeIndex] = subjectKey; } });
+                const holidayDates = formData.getAll('holiday_date[]'); const holidayNames = formData.getAll('holiday_name[]'); for(let i = 0; i < holidayDates.length; i++) { const dateValue = holidayDates[i]; if (!dateValue || !holidayNames[i]) { throw new Error(`Dados inválidos para o feriado ${i+1}. Verifique data e nome.`); } const parts = dateValue.split('-'); const dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`; config.holidays[dateKey] = holidayNames[i]; }
+                const recessStartStr = formData.get('recessStartDate'); const recessEndStr = formData.get('recessEndDate'); if (recessStartStr && recessEndStr) { const rPartsStart = recessStartStr.split('-'); const rPartsEnd = recessEndStr.split('-'); config.recess.start = new Date(rPartsStart[0], parseInt(rPartsStart[1],10)-1, rPartsStart[2]); config.recess.end = new Date(rPartsEnd[0], parseInt(rPartsEnd[1],10)-1, rPartsEnd[2], 23, 59, 59, 999); if (isNaN(config.recess.start.getTime()) || isNaN(config.recess.end.getTime())) { throw new Error("Datas de recesso inválidas."); } if(config.recess.start > config.recess.end) { throw new Error("Data de início do recesso não pode ser posterior à data de fim.");} } else if (recessStartStr || recessEndStr) { throw new Error("Para definir um período de recesso, ambas as datas (início e fim) devem ser preenchidas."); } else { config.recess = null; }
+                return config;
+            } catch (error) { console.error("Erro ao ler/validar formulário:", error); alert(`Erro no formulário:\n${error.message}\n\n(Verifique o console F12 para mais detalhes técnicos)`); return null; }
+        }
+
+        function downloadCalendarHtml(config) {
+            // console.log("DEBUG: downloadCalendarHtml called.");
+            const calendarHtml = document.getElementById('outputCalendars').innerHTML;
+            const tabsHtml = document.getElementById('outputMonthTabs').innerHTML;
+            let styles = "";
+            Array.from(document.styleSheets).forEach(sheet => {
+                try {
+                    Array.from(sheet.cssRules || sheet.rules).forEach(rule => { styles += rule.cssText; });
+                } catch (e) {
+                    // console.warn("Não foi possível acessar as regras de uma folha de estilo:", e);
+                    if (sheet.href) { styles += `@import url('${sheet.href}');\n`; }
+                }
+            });
+            const inlineStyleTag = document.querySelector('head > style');
+            if(inlineStyleTag && !styles.includes(inlineStyleTag.innerHTML)){ styles += inlineStyleTag.innerHTML; }
+            const title = document.getElementById('outputTitle').outerHTML;
+            const turmaInfo = document.getElementById('outputTurmaInfo').outerHTML;
+            let filename = `calendario_${(config.turmaNome || 'turma').replace(/\s+/g, '_')}_${config.year}_${config.turno}.html`;
+            filename = filename.replace(/[^a-z0-9_\-\.]/gi, '_').toLowerCase();
+            const finalHtml = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Calendário - ${config.turmaNome}</title><style>${styles} #outputSaveButtonContainer { display: none !important; } </style></head><body><div class="calendar-container-output"> ${title} ${turmaInfo}<div class="month-tabs">${tabsHtml}</div><div id="outputCalendars">${calendarHtml}</div></div><script> document.addEventListener('DOMContentLoaded', function () { const tabs = document.querySelectorAll('.month-tabs .tab-button'); const calendars = document.querySelectorAll('#outputCalendars .month-calendar'); if (!tabs || !calendars) return; function setActiveContent(targetMonth) { tabs.forEach(t => t.classList.remove('active')); calendars.forEach(c => c.classList.remove('active-calendar')); const activeTabButton = document.querySelector(\`.month-tabs .tab-button[data-month="\${targetMonth}"]\`); if (activeTabButton) activeTabButton.classList.add('active'); const calendarDiv = document.getElementById(\`calendar-\${targetMonth}\`); if(calendarDiv) calendarDiv.classList.add('active-calendar'); } tabs.forEach(tab => { tab.addEventListener('click', function () { setActiveContent(this.getAttribute('data-month')); }); }); const activeTab = document.querySelector('.month-tabs .tab-button.active'); if (!activeTab && tabs.length > 0) { setActiveContent(tabs[0].getAttribute('data-month')); } else if (activeTab) { setActiveContent(activeTab.getAttribute('data-month')); } }); <\/script></body></html>`;
+            try {
+                const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            } catch (error) { console.error("Erro download:", error); alert("Erro ao baixar."); }
+        }
+    </script>
+</body>
+</html>

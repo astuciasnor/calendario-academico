@@ -1,0 +1,2027 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Gerador de Calendário (v32 - Melhorado)</title>
+    <style>
+        /* Estilos base mantidos e melhorados */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333; 
+            font-size: 14px; 
+            min-height: 100vh;
+        }
+        
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            background-color: #fff; 
+            padding: 20px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+        }
+        
+        h1, h2, h3 { 
+            text-align: center; 
+            color: #333;
+            margin-bottom: 1.5rem;
+        }
+        
+        h1 {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5em;
+            margin-bottom: 2rem;
+        }
+        
+        h3 { 
+            margin-top: 1.5em; 
+            margin-bottom: 0.8em; 
+            border-bottom: 2px solid #667eea; 
+            padding-bottom: 0.5em;
+            position: relative;
+        }
+        
+        h3::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 2px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+        }
+        
+        /* Melhorias no formulário */
+        #configForm fieldset { 
+            border: 2px solid #e9ecef; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transition: all 0.3s ease;
+        }
+        
+        #configForm fieldset:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        #configForm legend { 
+            font-weight: bold; 
+            padding: 0 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 20px;
+            padding: 8px 20px;
+            font-size: 0.9em;
+        }
+        
+        #configForm label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        #configForm input[type="text"], 
+        #configForm input[type="number"], 
+        #configForm input[type="date"], 
+        #configForm select { 
+            width: 95%; 
+            padding: 12px; 
+            margin-bottom: 15px; 
+            border: 2px solid #e9ecef; 
+            border-radius: 8px; 
+            font-size: 1em;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        #configForm input:focus, 
+        #configForm select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        #configForm .form-row { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 20px; 
+            margin-bottom: 15px; 
+        }
+        
+        #configForm .form-group { 
+            flex: 1; 
+            min-width: 200px; 
+        }
+        
+        #configForm .radio-group label { 
+            display: inline-block; 
+            margin-right: 20px; 
+            font-weight: normal;
+            cursor: pointer;
+            padding: 8px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        #configForm .radio-group label:hover {
+            background-color: #f8f9fa;
+            border-color: #667eea;
+        }
+        
+        #configForm .radio-group input[type="radio"]:checked + span {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        #configForm .radio-group input[type="radio"] { 
+            margin-right: 8px; 
+            vertical-align: middle; 
+        }
+        
+        /* Botões melhorados */
+        #configForm button { 
+            padding: 12px 24px; 
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer; 
+            font-size: 1em; 
+            margin-top: 10px; 
+            margin-right: 10px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        #configForm button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        #configForm .remove-btn { 
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            font-size: 0.9em; 
+            padding: 8px 16px;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+        }
+        
+        #configForm .remove-btn:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+        
+        /* Lista dinâmica melhorada */
+        .dynamic-list-item { 
+            display: flex; 
+            flex-wrap: wrap; 
+            gap: 15px; 
+            align-items: flex-end; 
+            border-bottom: 2px dashed #e9ecef; 
+            padding-bottom: 15px; 
+            margin-bottom: 15px;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .dynamic-list-item:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+        
+        .dynamic-list-item div { 
+            flex: 1 1 120px; 
+        }
+        
+        .dynamic-list-item label { 
+            margin-bottom: 5px; 
+            font-size: 0.9em; 
+            display: block; 
+            font-weight: 600;
+        }
+        
+        .dynamic-list-item input, 
+        .dynamic-list-item select { 
+            width: 95%; 
+            margin-bottom: 0; 
+        }
+        
+        .dynamic-list-item input[type="color"] { 
+            width: 60px; 
+            height: 40px; 
+            padding: 4px; 
+            border: 2px solid #e9ecef; 
+            border-radius: 8px; 
+            vertical-align: middle; 
+            cursor: pointer;
+        }
+        
+        .dynamic-list-item button.remove-btn { 
+            flex-basis: auto; 
+            margin-top: 0px; 
+            max-width: 120px; 
+            align-self: flex-end; 
+            padding: 10px 15px; 
+            height: 40px; 
+        }
+        
+        /* Grade horária melhorada */
+        #weeklyScheduleGrid table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        #weeklyScheduleGrid th, 
+        #weeklyScheduleGrid td { 
+            border: 1px solid #dee2e6; 
+            padding: 12px; 
+            text-align: center; 
+            font-size: 0.9em;
+        }
+        
+        #weeklyScheduleGrid th { 
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            font-weight: 600;
+        }
+        
+        #weeklyScheduleGrid select { 
+            padding: 8px; 
+            font-size: 0.9em; 
+            max-width: 140px;
+            border: 2px solid #e9ecef;
+            border-radius: 6px;
+        }
+        
+        .schedule-note { 
+            font-size: 0.9em; 
+            color: #6c757d; 
+            margin-top: 0px; 
+            margin-bottom: 15px;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        /* Calendário de saída melhorado */
+        .calendar-container-output { 
+            margin-top: 40px;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .calendar-container-output h1, 
+        .calendar-container-output h2, 
+        .calendar-container-output h3 { 
+            text-align: center; 
+            color: #333; 
+        }
+        
+        .calendar-container-output h3 { 
+            margin-top: 0; 
+            margin-bottom: 20px; 
+        }
+        
+        /* Abas melhoradas */
+        .month-tabs { 
+            display: flex; 
+            justify-content: center; 
+            margin-bottom: 30px; 
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .tab-button { 
+            padding: 15px 25px; 
+            margin: 5px; 
+            border: 2px solid #e9ecef; 
+            background: white;
+            cursor: pointer; 
+            border-radius: 25px; 
+            font-size: 1em; 
+            transition: all 0.3s ease;
+            font-weight: 500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .tab-button:hover { 
+            background: #f8f9fa;
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+        
+        .tab-button.active { 
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white; 
+            border-color: transparent;
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .month-calendar { 
+            display: none; 
+        }
+        
+        .month-calendar.active-calendar { 
+            display: block; 
+        }
+        
+        /* Tabela do calendário melhorada */
+        .calendar-container-output table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 15px; 
+            table-layout: fixed;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .calendar-container-output th, 
+        .calendar-container-output td { 
+            border: 1px solid #dee2e6; 
+            padding: 4px; 
+            text-align: center; 
+            vertical-align: middle; 
+            font-size: 0.7em; 
+            height: 20px; 
+            position: relative; 
+            overflow: hidden; 
+            text-overflow: ellipsis; 
+            white-space: nowrap; 
+        }
+        
+        .calendar-container-output th { 
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            font-weight: bold; 
+            height: 25px;
+            font-size: 0.8em;
+        }
+        
+        .calendar-container-output table thead th:nth-child(1) { 
+            width: 80px; 
+            font-size: 0.7em; 
+        }
+        
+        .calendar-container-output table thead th:nth-child(n+2):nth-child(-n+6) { 
+            width: calc((100% - 80px) * 0.115); 
+        }
+        
+        .calendar-container-output table thead th:nth-child(n+7):nth-child(-n+8) { 
+            width: calc((100% - 80px) * 0.09); 
+        }
+        
+        .calendar-container-output td.time-slot-label { 
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            font-weight: bold; 
+            font-size: 0.65em; 
+            white-space: normal; 
+        }
+        
+        .date-number { 
+            position: absolute; 
+            top: 2px; 
+            right: 2px; 
+            font-size: 0.9em; 
+            color: #000; 
+            font-weight: bold;
+            background: rgba(255,255,255,0.8);
+            padding: 1px 3px;
+            border-radius: 3px;
+        }
+        
+        .interval-row td { 
+            background: linear-gradient(135deg, #e9ecef, #dee2e6);
+            color: #495057; 
+            font-style: italic; 
+            height: 18px !important; 
+            padding: 2px;
+            font-weight: 500;
+        }
+        
+        .interval-row td.time-slot-label { 
+            font-size: 0.65em; 
+        }
+        
+        .inactive-day { 
+            background-color: #f8f9fa !important; 
+            color: #adb5bd !important; 
+        }
+        
+        .inactive-day .subject-name { 
+            display: none; 
+        }
+        
+        .inactive-day .date-number { 
+            color: #adb5bd !important; 
+            font-weight: bold; 
+        }
+        
+        .subject-name { 
+            display: block; 
+            line-height: 1.1; 
+            font-size: 0.85em;
+            font-weight: 500;
+        }
+        
+        td.weekend, 
+        .calendar-container-output th.weekend-header { 
+            background: linear-gradient(135deg, #f1f3f4, #e8eaed);
+        }
+        
+        .week-start-separator > td { 
+            border-top: 3px solid #667eea; 
+        }
+        
+        .holiday { 
+            background: linear-gradient(135deg, #ffc107, #ffb300) !important;
+            color: #000 !important; 
+            font-weight: bold; 
+        } 
+        
+        .holiday .subject-name { 
+            display: none; 
+        } 
+        
+        .holiday .date-number { 
+            color: #000 !important; 
+        } 
+        
+        .holiday-text { 
+            font-size: 0.8em; 
+            line-height: 1.1;
+            font-weight: 600;
+        }
+        
+        .recesso-day { 
+            background: linear-gradient(135deg, #6c757d, #5a6268) !important;
+            color: #fff !important; 
+            font-style: italic; 
+        } 
+        
+        .recesso-day .subject-name { 
+            display: none; 
+        } 
+        
+        .recesso-day .date-number { 
+            color: #fff !important; 
+        } 
+        
+        .recesso-text { 
+            font-size: 0.8em; 
+            display: block; 
+            line-height: 1.1;
+            font-weight: 500;
+        }
+        
+        .retorno-recesso { 
+            background: linear-gradient(135deg, #28a745, #20c997) !important;
+        }
+        
+        /* Botão de salvar melhorado */
+        #saveCalendarBtn { 
+            display: block; 
+            width: calc(100% - 40px); 
+            max-width: 400px; 
+            margin: 30px auto 15px auto; 
+            padding: 15px 30px; 
+            font-size: 1.2em; 
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white; 
+            border: none; 
+            border-radius: 25px; 
+            cursor: pointer;
+            font-weight: 600;
+            box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+            transition: all 0.3s ease;
+        }
+        
+        #saveCalendarBtn:hover { 
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.5);
+        }
+        
+        /* Modal melhorado */
+        #subjectSelectionModal { 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
+            overflow: auto; 
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s; 
+            backdrop-filter: blur(5px);
+        }
+        
+        #subjectSelectionModal .modal-content { 
+            background-color: #fefefe; 
+            margin: 5% auto; 
+            padding: 30px; 
+            border: none; 
+            width: 80%; 
+            max-width: 800px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: slideIn 0.3s; 
+        }
+        
+        #subjectSelectionModal #closeSubjectModalBtn { 
+            color: #aaa; 
+            float: right; 
+            font-size: 32px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            line-height: 1;
+            transition: all 0.3s ease;
+        }
+        
+        #subjectSelectionModal #closeSubjectModalBtn:hover, 
+        #subjectSelectionModal #closeSubjectModalBtn:focus { 
+            color: #667eea; 
+            text-decoration: none;
+            transform: scale(1.1);
+        }
+        
+        #subjectSelectionModal h2 { 
+            margin-top: 0; 
+            margin-bottom: 25px;
+            color: #333;
+        }
+        
+        #subjectSelectionModal #subjectSearchInput { 
+            width: calc(100% - 24px); 
+            padding: 15px 12px; 
+            margin-bottom: 20px; 
+            border: 2px solid #e9ecef; 
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+        
+        #subjectSelectionModal #subjectSearchInput:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        #subjectSelectionModal #predefinedSubjectsListContainer { 
+            max-height: 400px; 
+            overflow-y: auto; 
+            border: 2px solid #e9ecef; 
+            padding: 0; 
+            margin-top: 15px;
+            border-radius: 10px;
+        }
+        
+        #subjectSelectionModal .subject-list-item { 
+            padding: 15px; 
+            border-bottom: 1px solid #f0f0f0; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        #subjectSelectionModal .subject-list-item:last-child { 
+            border-bottom: none; 
+        }
+        
+        #subjectSelectionModal .subject-list-item:hover:not(.disabled) { 
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+        
+        #subjectSelectionModal .subject-list-item span { 
+            font-size: 0.9em; 
+        }
+        
+        #subjectSelectionModal .subject-list-item button { 
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white; 
+            border: none; 
+            padding: 8px 16px; 
+            border-radius: 20px; 
+            cursor: pointer; 
+            font-size: 0.9em;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        #subjectSelectionModal .subject-list-item button:hover { 
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        #subjectSelectionModal .subject-list-item.disabled { 
+            opacity: 0.6; 
+            cursor: not-allowed; 
+            background-color: #f8f9fa; 
+        }
+        
+        #subjectSelectionModal .subject-list-item.disabled button { 
+            display: none; 
+        }
+        
+        #subjectSelectionModal .subject-list-item-info { 
+            flex-grow: 1; 
+        }
+        
+        /* Animações */
+        @keyframes fadeIn { 
+            from {opacity: 0;} 
+            to {opacity: 1;} 
+        }
+        
+        @keyframes slideIn { 
+            from {transform: translateY(-50px); opacity:0;} 
+            to {transform: translateY(0); opacity:1;} 
+        }
+        
+        /* Responsividade melhorada */
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+                margin: 10px;
+            }
+            
+            #configForm .form-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .dynamic-list-item {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .month-tabs {
+                justify-content: center;
+            }
+            
+            .tab-button {
+                padding: 10px 15px;
+                font-size: 0.9em;
+            }
+            
+            .calendar-container-output th,
+            .calendar-container-output td {
+                font-size: 0.6em;
+                padding: 2px;
+            }
+        }
+        
+        /* Indicador de progresso */
+        .progress-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            transform: scaleX(0);
+            transform-origin: left;
+            z-index: 1001;
+            transition: transform 0.3s ease;
+        }
+        
+        .progress-indicator.show {
+            transform: scaleX(1);
+        }
+        
+        /* Tooltip melhorado */
+        .tooltip {
+            position: relative;
+            cursor: help;
+        }
+        
+        .tooltip::before {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.8em;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1002;
+        }
+        
+        .tooltip:hover::before {
+            opacity: 1;
+        }
+        
+        /* Botão de geração destacado */
+        #generateButton {
+            background: linear-gradient(45deg, #28a745, #20c997) !important;
+            font-size: 1.3em !important;
+            padding: 18px 30px !important;
+            box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4) !important;
+            border-radius: 30px !important;
+            font-weight: 600 !important;
+        }
+        
+        #generateButton:hover {
+            transform: translateY(-3px) !important;
+            box-shadow: 0 12px 35px rgba(40, 167, 69, 0.5) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="progress-indicator" id="progressIndicator"></div>
+    <div class="container">
+        <h1>🎓 Gerador de Calendário Acadêmico</h1>
+        <form id="configForm">
+             <fieldset>
+                 <legend>📋 Informações Gerais</legend>
+                 <div class="form-row">
+                     <div class="form-group">
+                         <label for="turmaNome">Nome da Turma:</label>
+                         <input type="text" id="turmaNome" name="turmaNome" value="Engenharia de Pesca - EP2025" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="year">Ano:</label>
+                         <input type="number" id="year" name="year" value="2025" required>
+                     </div>
+                 </div>
+                 <div class="form-row">
+                     <div class="form-group">
+                         <label for="startMonth">Mês Inicial Exibição:</label>
+                         <select id="startMonth" name="startMonth">
+                             <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                             <option value="3" selected>Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                             <option value="6">Julho</option><option value="7">Agosto</option><option value="8">Setembro</option>
+                             <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                         </select>
+                     </div>
+                     <div class="form-group">
+                         <label for="endMonth">Mês Final Exibição:</label>
+                         <select id="endMonth" name="endMonth">
+                             <option value="0">Janeiro</option><option value="1">Fevereiro</option><option value="2">Março</option>
+                             <option value="3">Abril</option><option value="4">Maio</option><option value="5">Junho</option>
+                             <option value="6">Julho</option><option value="7">Agosto</option><option value="8" selected>Setembro</option>
+                             <option value="9">Outubro</option><option value="10">Novembro</option><option value="11">Dezembro</option>
+                         </select>
+                     </div>
+                     <div class="form-group">
+                         <label for="classesStartDate">Data Início das Aulas:</label>
+                         <input type="date" id="classesStartDate" name="classesStartDate" value="2025-04-29" required>
+                     </div>
+                     <div class="form-group">
+                         <label for="classesEndDate">Data Fim das Aulas:</label>
+                         <input type="date" id="classesEndDate" name="classesEndDate" value="2025-09-12" required>
+                     </div>
+                 </div>
+             </fieldset>
+             
+             <fieldset> 
+                 <legend>⏰ Turno</legend> 
+                 <div class="radio-group"> 
+                     <label><input type="radio" name="turno" value="manha" id="turno_manha"><span>Manhã (7h30 - 12h45)</span></label> 
+                     <label><input type="radio" name="turno" value="tarde" id="turno_tarde" checked><span>Tarde (13h30 - 18h45)</span></label> 
+                 </div> 
+             </fieldset>
+             
+             <fieldset> 
+                 <legend>📚 Disciplinas Regulares</legend> 
+                 <div id="subjectsContainer"></div>
+                <button type="button" id="openSubjectModalBtn">➕ Adicionar do Catálogo</button>
+                <button type="button" id="addCustomSubjectBtn" style="background: linear-gradient(45deg, #6c757d, #5a6268);">✏️ Adicionar Personalizada</button>
+            </fieldset>
+            
+            <fieldset>
+                <legend>🎯 Disciplinas Intensivas</legend>
+                <div id="intensiveCoursesContainer">
+                    <!-- Linhas de disciplinas intensivas serão adicionadas aqui -->
+                </div>
+                <button type="button" id="addIntensiveCourseBtn" style="background: linear-gradient(45deg, #ffc107, #ffb300); color: #212529;">⚡ Adicionar Intensiva</button>
+            </fieldset>
+            
+             <fieldset> 
+                 <legend>📅 Grade Horária Semanal</legend> 
+                 <p class="schedule-note">
+                     <strong>💡 Dica:</strong> Selecione a disciplina para cada horário do <strong>turno selecionado acima</strong>.
+                 </p> 
+                 <div id="weeklyScheduleGrid"> 
+                     <table> 
+                         <thead> 
+                             <tr>
+                                 <th>Horário</th>
+                                 <th>Segunda</th>
+                                 <th>Terça</th>
+                                 <th>Quarta</th>
+                                 <th>Quinta</th>
+                                 <th>Sexta</th>
+                             </tr> 
+                         </thead> 
+                         <tbody> 
+                             <tr> 
+                                 <td>1ª Aula</td> 
+                                 <td><select name="schedule_0_0"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_1_0"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_2_0"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_3_0"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_4_0"><option value="">Vazio</option></select></td> 
+                             </tr> 
+                             <tr> 
+                                 <td>2ª Aula</td> 
+                                 <td><select name="schedule_0_1"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_1_1"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_2_1"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_3_1"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_4_1"><option value="">Vazio</option></select></td> 
+                             </tr> 
+                             <tr> 
+                                 <td>3ª Aula</td> 
+                                 <td><select name="schedule_0_2"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_1_2"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_2_2"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_3_2"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_4_2"><option value="">Vazio</option></select></td> 
+                             </tr> 
+                             <tr> 
+                                 <td>Intervalo</td> 
+                                 <td colspan="5" style="background: linear-gradient(135deg, #e9ecef, #dee2e6); font-style: italic; color: #495057;">☕ Intervalo</td> 
+                             </tr> 
+                             <tr> 
+                                 <td>4ª Aula</td> 
+                                 <td><select name="schedule_0_3"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_1_3"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_2_3"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_3_3"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_4_3"><option value="">Vazio</option></select></td> 
+                             </tr> 
+                             <tr> 
+                                 <td>5ª Aula</td> 
+                                 <td><select name="schedule_0_4"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_1_4"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_2_4"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_3_4"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_4_4"><option value="">Vazio</option></select></td> 
+                             </tr> 
+                             <tr> 
+                                 <td>6ª Aula</td> 
+                                 <td><select name="schedule_0_5"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_1_5"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_2_5"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_3_5"><option value="">Vazio</option></select></td> 
+                                 <td><select name="schedule_4_5"><option value="">Vazio</option></select></td> 
+                             </tr> 
+                         </tbody> 
+                     </table> 
+                 </div> 
+             </fieldset>
+             
+             <fieldset> 
+                 <legend>🎉 Feriados</legend> 
+                 <div id="holidaysContainer">  
+                     <div class="dynamic-list-item holiday-item"> 
+                         <div><label>Data:</label><input type="date" name="holiday_date[]" value="2025-05-01" required></div> 
+                         <div><label>Nome:</label><input type="text" name="holiday_name[]" value="Dia do Trabalho" required></div> 
+                         <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button> 
+                     </div> 
+                     <div class="dynamic-list-item holiday-item">
+                         <div><label>Data:</label><input type="date" name="holiday_date[]" value="2025-06-19" required></div>
+                         <div><label>Nome:</label><input type="text" name="holiday_name[]" value="Corpus Christi" required></div>
+                         <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button>
+                     </div> 
+                     <div class="dynamic-list-item holiday-item">
+                         <div><label>Data:</label><input type="date" name="holiday_date[]" value="2025-08-15" required></div>
+                         <div><label>Nome:</label><input type="text" name="holiday_name[]" value="Adesão do Pará" required></div>
+                         <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button>
+                     </div> 
+                 </div> 
+                 <button type="button" id="addHolidayBtn">🎉 Adicionar Feriado</button> 
+             </fieldset>
+             
+             <fieldset> 
+                 <legend>🏖️ Período de Recesso</legend> 
+                 <div class="form-row"> 
+                     <div class="form-group"> 
+                         <label for="recessStartDate">Data Início Recesso:</label> 
+                         <input type="date" id="recessStartDate" name="recessStartDate" value="2025-07-21"> 
+                     </div> 
+                     <div class="form-group"> 
+                         <label for="recessEndDate">Data Fim Recesso:</label> 
+                         <input type="date" id="recessEndDate" name="recessEndDate" value="2025-08-03"> 
+                     </div> 
+                 </div> 
+             </fieldset>
+             
+            <button type="button" id="generateButton" class="tooltip" data-tooltip="Clique para gerar seu calendário personalizado">
+                🚀 Gerar Calendário
+            </button>
+        </form>
+
+        <div class="calendar-container-output" id="outputCalendarContainer" style="display: none;">
+             <h1 id="outputTitle">📅 Calendário de Aulas</h1> 
+             <h2 id="outputTurmaInfo"></h2>
+            <div id="outputSaveButtonContainer"></div>
+            <div class="month-tabs" id="outputMonthTabs"></div> 
+            <div id="outputCalendars"></div>
+        </div>
+    </div>
+
+    <div id="subjectSelectionModal">
+        <div class="modal-content">
+            <span id="closeSubjectModalBtn">&times;</span>
+            <h2>📚 Selecionar Disciplina do Catálogo</h2>
+            <input type="text" id="subjectSearchInput" placeholder="🔍 Buscar por código, nome ou abreviação...">
+            <div id="predefinedSubjectsListContainer">
+            </div>
+            <p style="font-size:0.9em; color: #6c757d; margin-top:15px;">
+                💡 <strong>Não encontrou?</strong> Feche e use "Adicionar Personalizada" para criar uma disciplina customizada.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Constantes e configurações
+        const SHIFT_TIMES = {
+            tarde: { 
+                labels: ["13h30-14h20", "14h20-15h10", "15h10-16h00", "16h00-16h15", "16h15-17h05", "17h05-17h55", "17h55-18h45"], 
+                indices: [0, 1, 2, null, 3, 4, 5] 
+            },
+            manha: { 
+                labels: ["7h30- 8h20", "8h20-9h10", "9h10-10h", "10h-10h15", "10h15-11h05", "11h05-11h55", "11h55-12h45"], 
+                indices: [0, 1, 2, null, 3, 4, 5] 
+            }
+        };
+
+        // Função para calcular contraste de cor
+        function getContrastYIQ(hexcolor){
+            hexcolor = hexcolor.replace("#", ""); 
+            if(hexcolor.length === 3) { 
+                hexcolor = hexcolor.split('').map(char => char + char).join(''); 
+            }
+            if(hexcolor.length !== 6) return '#000000';
+            
+            var r = parseInt(hexcolor.substr(0,2),16); 
+            var g = parseInt(hexcolor.substr(2,2),16); 
+            var b = parseInt(hexcolor.substr(4,2),16);
+            
+            if(isNaN(r) || isNaN(g) || isNaN(b)) return '#000000';
+            
+            var yiq = ((r*299)+(g*587)+(b*114))/1000; 
+            return (yiq >= 128) ? '#000000' : '#FFFFFF';
+        }
+
+        // Função para mostrar indicador de progresso
+        function showProgress() {
+            const indicator = document.getElementById('progressIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Catálogo de disciplinas predefinidas
+        const PREDEFINED_SUBJECTS = [
+            { code: "EP05001", name: "INGLES TECNICO", abbreviation: "Inglês Técn", defaultColor: "#90EE90", defaultLoad: 60 },
+            { code: "EP05002", name: "METODOLOGIA CIENTIFICA", abbreviation: "Metod Cient", defaultColor: "#6C757D", defaultLoad: 45 },
+            { code: "EP05003", name: "INFORMATICA BASICA", abbreviation: "Inform Básic", defaultColor: "#1E90FF", defaultLoad: 45 },
+            { code: "EP05004", name: "MATEMATICA BASICA", abbreviation: "Matem Básic", defaultColor: "#20C997", defaultLoad: 90 },
+            { code: "EP05005", name: "ECOLOGIA", abbreviation: "Ecologia", defaultColor: "#28A745", defaultLoad: 60 },
+            { code: "EP05006", name: "INTRODUCAO A ENGENHARIA DE PESCA", abbreviation: "Intr Eng Pesca", defaultColor: "#FFCC00", defaultLoad: 30 },
+            { code: "EP05007", name: "QUIMICA GERAL E ANALITICA", abbreviation: "Quím Geral", defaultColor: "#FF9933", defaultLoad: 90 },
+            { code: "EP05073", name: "QUIMICA BASICA", abbreviation: "Quím Básic", defaultColor: "#F08080", defaultLoad: 45 },
+            { code: "EP05008", name: "MATEMATICA APLICADA", abbreviation: "Matem Aplic", defaultColor: "#4682B4", defaultLoad: 60 },
+            { code: "EP05009", name: "DESENHO TECNICO", abbreviation: "Desen Técn", defaultColor: "#B0E0E6", defaultLoad: 60 },
+            { code: "EP05010", name: "BIOQUIMICA", abbreviation: "Bioquímica", defaultColor: "#DA70D6", defaultLoad: 90 },
+            { code: "EP05011", name: "ESTATISTICA BASICA", abbreviation: "Estat Básic", defaultColor: "#CD853F", defaultLoad: 45 },
+            { code: "EP05012", name: "MECANICA BASICA", abbreviation: "Mecân Básic", defaultColor: "#BDB76B", defaultLoad: 75 },
+            { code: "EP05013", name: "ZOOLOGIA AQUATICA", abbreviation: "Zool Aquát", defaultColor: "#ADD8E6", defaultLoad: 60 },
+            { code: "EP05069", name: "TOPICOS ESPECIAIS EM AQUICULTURA", abbreviation: "TE-Aquicultura", defaultColor: "#AFEEEE", defaultLoad: 30 },
+            { code: "EP05014", name: "GEOMETRIA ANALITICA E ALGEBRA LINEAR", abbreviation: "Geom Analít", defaultColor: "#DDA0DD", defaultLoad: 75 },
+            { code: "EP05015", name: "ICTIOLOGIA", abbreviation: "Ictiologia", defaultColor: "#87CEEB", defaultLoad: 45 },
+            { code: "EP05016", name: "DESENHO COMPUTACIONAL", abbreviation: "Desen Comput", defaultColor: "#E6E6FA", defaultLoad: 60 },
+            { code: "EP05017", name: "ECONOMIA", abbreviation: "Economia", defaultColor: "#FFB6C1", defaultLoad: 45 },
+            { code: "EP05018", name: "MICROBIOLOGIA DO PESCADO", abbreviation: "Microb Pesc", defaultColor: "#FFA07A", defaultLoad: 60 }
+        ].map(subject => ({...subject, defaultTextColor: getContrastYIQ(subject.defaultColor) }));
+
+        // Elementos do DOM
+        const subjectSelectionModal = document.getElementById('subjectSelectionModal');
+        const closeSubjectModalBtn = document.getElementById('closeSubjectModalBtn');
+        const predefinedSubjectsListContainer = document.getElementById('predefinedSubjectsListContainer');
+        const subjectSearchInput = document.getElementById('subjectSearchInput');
+        const subjectsContainer = document.getElementById('subjectsContainer');
+        const intensiveCoursesContainer = document.getElementById('intensiveCoursesContainer');
+
+        // Funções de manipulação de disciplinas
+        function addEmptySubjectRow() { 
+            const newItem = document.createElement('div'); 
+            newItem.className = 'dynamic-list-item subject-item'; 
+            const defaultBgColor = "#EEEEEE"; 
+            const defaultTextColor = getContrastYIQ(defaultBgColor); 
+            
+            newItem.innerHTML = `
+                <div><label>🔑 Chave (ID):</label><input type="text" name="subject_key[]" required placeholder="Ex: fisicaBasica"></div> 
+                <div><label>📝 Nome Exibição:</label><input type="text" name="subject_name[]" required placeholder="Ex: Física Básica"></div> 
+                <div><label>⏱️ Carga (h):</label><input type="number" name="subject_load[]" value="45" required min="1"></div> 
+                <div><label>🎨 Cor Fundo:</label><input type="color" name="subject_bgcolor[]" value="${defaultBgColor}"></div> 
+                <div><label>✏️ Cor Texto:</label><input type="color" name="subject_textcolor[]" value="${defaultTextColor}"></div> 
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button>
+            `; 
+            
+            subjectsContainer.appendChild(newItem); 
+            addEventListenersToColorPickers(newItem); 
+            updateScheduleSelectOptions(); 
+        }
+
+        function addSubjectRowFromPredefined(subjectData) { 
+            const newItem = document.createElement('div'); 
+            newItem.className = 'dynamic-list-item subject-item'; 
+            const bgColor = subjectData.defaultColor || '#EEEEEE'; 
+            const textColor = subjectData.defaultTextColor || getContrastYIQ(bgColor); 
+            
+            newItem.innerHTML = `
+                <div><label>🔑 Chave (ID):</label><input type="text" name="subject_key[]" value="${subjectData.code}" required readonly></div> 
+                <div><label>📝 Nome Exibição:</label><input type="text" name="subject_name[]" value="${subjectData.abbreviation}" required></div> 
+                <div><label>⏱️ Carga (h):</label><input type="number" name="subject_load[]" value="${subjectData.defaultLoad || ''}" required min="1"></div> 
+                <div><label>🎨 Cor Fundo:</label><input type="color" name="subject_bgcolor[]" value="${bgColor}"></div> 
+                <div><label>✏️ Cor Texto:</label><input type="color" name="subject_textcolor[]" value="${textColor}"></div> 
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button>
+            `; 
+            
+            subjectsContainer.appendChild(newItem); 
+            addEventListenersToColorPickers(newItem); 
+            updateScheduleSelectOptions(); 
+        }
+
+        function addEventListenersToColorPickers(itemElement) { 
+            const bgColorPicker = itemElement.querySelector('input[name="subject_bgcolor[]"]'); 
+            const textColorPicker = itemElement.querySelector('input[name="subject_textcolor[]"]'); 
+            
+            if (bgColorPicker && textColorPicker) { 
+                bgColorPicker.addEventListener('input', function() { 
+                    textColorPicker.value = getContrastYIQ(this.value); 
+                }); 
+            } 
+        }
+
+        function addHolidayRow() { 
+            const container = document.getElementById('holidaysContainer'); 
+            const newItem = document.createElement('div'); 
+            newItem.className = 'dynamic-list-item holiday-item'; 
+            
+            newItem.innerHTML = `
+                <div><label>📅 Data:</label><input type="date" name="holiday_date[]" required></div> 
+                <div><label>🎉 Nome:</label><input type="text" name="holiday_name[]" required></div> 
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button>
+            `; 
+            
+            container.appendChild(newItem); 
+        }
+
+        function removeListItem(button) { 
+            const item = button.closest('.dynamic-list-item'); 
+            const isSubjectItem = item.classList.contains('subject-item'); 
+            item.remove(); 
+            
+            if (isSubjectItem) { 
+                updateScheduleSelectOptions(); 
+            } 
+        }
+
+        function updateIntensiveCourseSubjectSelects() { 
+            let subjectOptions = '<option value="">Selecione...</option>'; 
+            
+            subjectsContainer.querySelectorAll('.subject-item').forEach(item => { 
+                const keyInput = item.querySelector('input[name="subject_key[]"]'); 
+                const nameInput = item.querySelector('input[name="subject_name[]"]'); 
+                
+                if (keyInput && nameInput && keyInput.value.trim()) { 
+                    subjectOptions += `<option value="${keyInput.value.trim()}">${nameInput.value || keyInput.value} (${keyInput.value.trim()})</option>`; 
+                } 
+            }); 
+            
+            document.querySelectorAll('select[name="intensive_subject_key[]"]').forEach(select => { 
+                const currentValue = select.value; 
+                select.innerHTML = subjectOptions; 
+                
+                if (Array.from(select.options).some(opt => opt.value === currentValue)) { 
+                    select.value = currentValue; 
+                } else { 
+                    select.value = ""; 
+                } 
+            }); 
+        }
+
+        function addIntensiveCourseRow() { 
+            const newItem = document.createElement('div'); 
+            newItem.className = 'dynamic-list-item intensive-course-item'; 
+            let subjectOptions = '<option value="">Selecione...</option>'; 
+            
+            subjectsContainer.querySelectorAll('.subject-item').forEach(item => { 
+                const keyInput = item.querySelector('input[name="subject_key[]"]'); 
+                const nameInput = item.querySelector('input[name="subject_name[]"]'); 
+                
+                if (keyInput && nameInput && keyInput.value.trim()) { 
+                    subjectOptions += `<option value="${keyInput.value.trim()}">${nameInput.value || keyInput.value} (${keyInput.value.trim()})</option>`; 
+                } 
+            }); 
+            
+            newItem.innerHTML = `
+                <div style="flex-grow: 2;"><label>📚 Disciplina:</label><select name="intensive_subject_key[]" required>${subjectOptions}</select></div> 
+                <div><label>📅 Data Início:</label><input type="date" name="intensive_start_date[]" required></div> 
+                <div><label>📅 Data Fim:</label><input type="date" name="intensive_end_date[]" required></div> 
+                <div style="flex-grow: 0.5;" class="tooltip" data-tooltip="Quantas aulas do turno esta disciplina ocupará por dia (1-6)">
+                    <label>⚡ Aulas/Dia:</label>
+                    <input type="number" name="intensive_slots_per_day[]" min="1" max="6" value="6">
+                </div> 
+                <button type="button" class="remove-btn" onclick="removeListItem(this)">🗑️ Remover</button>
+            `; 
+            
+            intensiveCoursesContainer.appendChild(newItem); 
+        }
+
+        function updateScheduleSelectOptions() { 
+            const currentSubjectItems = subjectsContainer.querySelectorAll('.subject-item'); 
+            const scheduleSelects = document.querySelectorAll('#weeklyScheduleGrid select'); 
+            let optionsHtml = '<option value="">Vazio</option>'; 
+            
+            currentSubjectItems.forEach(item => { 
+                const keyInput = item.querySelector('input[name="subject_key[]"]'); 
+                const nameInput = item.querySelector('input[name="subject_name[]"]'); 
+                
+                if (keyInput && nameInput && keyInput.value.trim()) { 
+                    optionsHtml += `<option value="${keyInput.value.trim()}">${nameInput.value || keyInput.value} (${keyInput.value.trim()})</option>`; 
+                } 
+            }); 
+            
+            scheduleSelects.forEach(select => { 
+                const currentValue = select.value; 
+                select.innerHTML = optionsHtml; 
+                
+                if (Array.from(select.options).some(opt => opt.value === currentValue)) { 
+                    select.value = currentValue; 
+                } else { 
+                    select.value = ""; 
+                } 
+            }); 
+            
+            updateIntensiveCourseSubjectSelects(); 
+        }
+
+        // Funções do modal de seleção de disciplinas
+        function getAlreadyAddedSubjectKeys() { 
+            const addedKeys = []; 
+            
+            subjectsContainer.querySelectorAll('.subject-item input[name="subject_key[]"]').forEach(input => { 
+                if (input.value.trim()) { 
+                    addedKeys.push(input.value.trim()); 
+                } 
+            }); 
+            
+            return addedKeys; 
+        }
+
+        function populatePredefinedSubjectsList() { 
+            predefinedSubjectsListContainer.innerHTML = ''; 
+            const searchTerm = subjectSearchInput.value.toLowerCase().trim(); 
+            const alreadyAddedKeys = getAlreadyAddedSubjectKeys(); 
+            let foundSubjects = 0; 
+            
+            PREDEFINED_SUBJECTS.forEach(subject => { 
+                const isMatch = searchTerm === '' || 
+                    subject.code.toLowerCase().includes(searchTerm) || 
+                    subject.name.toLowerCase().includes(searchTerm) || 
+                    subject.abbreviation.toLowerCase().includes(searchTerm); 
+                
+                if (isMatch) { 
+                    foundSubjects++; 
+                    const subjectDiv = document.createElement('div'); 
+                    subjectDiv.className = 'subject-list-item'; 
+                    const isAdded = alreadyAddedKeys.includes(subject.code); 
+                    
+                    if (isAdded) { 
+                        subjectDiv.classList.add('disabled'); 
+                    } 
+                    
+                    let htmlContent = `
+                        <div class="subject-list-item-info">
+                            <strong>${subject.code}</strong> - ${subject.name} 
+                            <br><em>📝 ${subject.abbreviation}</em> 
+                            <span style="color: #6c757d; font-size:0.85em;"> | ⏱️ ${subject.defaultLoad}h</span>
+                        </div>
+                    `; 
+                    
+                    if (isAdded) { 
+                        htmlContent += `<span style="color:#6c757d; font-style:italic;">✅ Já adicionada</span>`; 
+                    } else { 
+                        htmlContent += `<button type="button">➕ Selecionar</button>`; 
+                    } 
+                    
+                    subjectDiv.innerHTML = htmlContent; 
+                    
+                    if (!isAdded) { 
+                        subjectDiv.querySelector('button').addEventListener('click', (e) => { 
+                            e.stopPropagation(); 
+                            addSubjectRowFromPredefined(subject); 
+                            subjectSelectionModal.style.display = 'none'; 
+                        }); 
+                        
+                        subjectDiv.addEventListener('click', () => { 
+                            addSubjectRowFromPredefined(subject); 
+                            subjectSelectionModal.style.display = 'none'; 
+                        }); 
+                    } 
+                    
+                    predefinedSubjectsListContainer.appendChild(subjectDiv); 
+                } 
+            }); 
+            
+            if (foundSubjects === 0) { 
+                predefinedSubjectsListContainer.innerHTML = '<p style="padding: 20px; text-align:center; color:#6c757d;">🔍 Nenhuma disciplina encontrada com esse termo de busca.</p>'; 
+            } 
+        }
+
+        function openSubjectSelectionModal() { 
+            subjectSearchInput.value = ''; 
+            populatePredefinedSubjectsList(); 
+            subjectSelectionModal.style.display = 'block'; 
+            subjectSearchInput.focus(); 
+        }
+
+        // Variável global para controle de cargas horárias
+        let completedSubjectLoads = {};
+
+        // Função principal de geração do calendário
+        function generateFromForm() {
+            console.log("🚀 Iniciando geração do calendário...");
+            showProgress();
+            
+            const formEl = document.getElementById('configForm');
+            const outputContainer = document.getElementById('outputCalendarContainer');
+            const outputCalendarsDiv = document.getElementById('outputCalendars');
+            const outputTabsDiv = document.getElementById('outputMonthTabs');
+            const saveButtonContainer = document.getElementById('outputSaveButtonContainer');
+            
+            // Limpar outputs anteriores
+            outputCalendarsDiv.innerHTML = ''; 
+            outputTabsDiv.innerHTML = ''; 
+            saveButtonContainer.innerHTML = '';
+
+            let config = {};
+            
+            try {
+                config = readAndValidateForm(formEl);
+                if (!config) return;
+
+                // Resetar cargas horárias
+                completedSubjectLoads = {};
+                for (const key in config.subjects) {
+                    completedSubjectLoads[key] = 0;
+                }
+                
+                console.log("📊 Cargas horárias iniciais:", completedSubjectLoads);
+
+                // Funções auxiliares
+                function getSubjectByKey(key) { 
+                    return config.subjects[key] || null; 
+                }
+                
+                function isClassDay(date) {
+                    try {
+                        if (!date || !(date instanceof Date) || isNaN(date)) return false;
+
+                        const checkDateOnly = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+                        const startDateOnly = new Date(config.classesStartDate.getFullYear(), config.classesStartDate.getMonth(), config.classesStartDate.getDate());
+                        const endDateOnly = config.classesEndDate ? new Date(config.classesEndDate.getFullYear(), config.classesEndDate.getMonth(), config.classesEndDate.getDate()) : null;
+
+                        if (checkDateOnly < startDateOnly) return false;
+                        if (endDateOnly && checkDateOnly > endDateOnly) return false;
+
+                        const dayOfWeek = date.getDay();
+                        if (dayOfWeek === 0 || dayOfWeek === 6) return false;
+
+                        const dateKeyForHolidayCheck = `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
+                        if (config.holidays[dateKeyForHolidayCheck]) return false;
+
+                        if (config.recess) {
+                            const recessStartDateOnly = new Date(config.recess.start.getFullYear(), config.recess.start.getMonth(), config.recess.start.getDate());
+                            const recessEndDateOnly = new Date(config.recess.end.getFullYear(), config.recess.end.getMonth(), config.recess.end.getDate());
+                            if (checkDateOnly >= recessStartDateOnly && checkDateOnly <= recessEndDateOnly) return false;
+                        }
+
+                        return true;
+                    } catch (e) {
+                        console.error("❌ Erro em isClassDay:", date, e);
+                        return false;
+                    }
+                }
+                
+                function formatDateKey(date) { 
+                    try { 
+                        if (!date || !(date instanceof Date) || isNaN(date)) { 
+                            return "invalid-date";
+                        } 
+                        const day = String(date.getDate()).padStart(2, '0'); 
+                        const month = String(date.getMonth() + 1).padStart(2, '0'); 
+                        const year = date.getFullYear(); 
+                        return `${year}-${month}-${day}`; 
+                    } catch (e) { 
+                        console.error("❌ Erro ao formatar data:", date, e); 
+                        return "invalid-date"; 
+                    } 
+                }
+                
+                function createTableCell(content, cssClass = "", dateNumber = null, isFirstSlot = false, styleString = "") { 
+                    let dateSpan = ""; 
+                    if (dateNumber !== null && isFirstSlot) { 
+                        dateSpan = `<span class="date-number">${dateNumber}</span>`; 
+                    } 
+                    const safeContent = content || ""; 
+                    const styleAttr = styleString ? ` style="${styleString}"` : ""; 
+                    return `<td class="${cssClass.trim()}"${styleAttr}>${dateSpan}${safeContent}</td>`; 
+                }
+
+                // Fase de Alocação
+                const allMonthsData = {};
+                console.log("📅 Iniciando fase de alocação...");
+                
+                const loopStartDate = new Date(config.year, config.startMonth, 1);
+                const loopEndDate = new Date(config.year, config.endMonth + 1, 0);
+                const timeSlots = SHIFT_TIMES[config.turno].labels;
+                const timeIndices = SHIFT_TIMES[config.turno].indices;
+
+                for (let dt = new Date(loopStartDate); dt <= loopEndDate; dt.setDate(dt.getDate() + 1)) {
+                    const currentFullDate = new Date(dt);
+                    const dateKey = formatDateKey(currentFullDate);
+                    const dateKeyForHolidayCheck = `${String(currentFullDate.getDate()).padStart(2, '0')}/${String(currentFullDate.getMonth() + 1).padStart(2, '0')}/${currentFullDate.getFullYear()}`;
+                    
+                    allMonthsData[dateKey] = [];
+                    
+                    const holidayInfo = config.holidays[dateKeyForHolidayCheck];
+                    const isRecess = config.recess && currentFullDate >= config.recess.start && currentFullDate <= config.recess.end;
+                    const dayOfWeek = currentFullDate.getDay();
+                    const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
+                    const isDayForClass = isClassDay(currentFullDate);
+
+                    if (!isDayForClass) {
+                         let type = 'inactive_day'; 
+                         let content = ''; 
+                         let cssClass = 'inactive-day';
+                         
+                         if (holidayInfo) { 
+                             type = 'holiday'; 
+                             content = `<span class="holiday-text">🎉 ${holidayInfo}</span>`; 
+                             cssClass = 'holiday'; 
+                         }
+                         else if (isRecess) { 
+                             type = 'recess'; 
+                             content = '<span class="recesso-text">🏖️ Recesso</span>'; 
+                             cssClass = 'recesso-day'; 
+                         }
+                         else if (isWeekend) { 
+                             type = 'weekend'; 
+                             cssClass = 'weekend'; 
+                         }
+                         
+                         for (let slotIdx = 0; slotIdx < timeSlots.length; slotIdx++) { 
+                             allMonthsData[dateKey].push({ 
+                                 type: type, 
+                                 content: content, 
+                                 cssClass: cssClass, 
+                                 style: '' 
+                             }); 
+                         } 
+                         continue;
+                    }
+
+                    // Dia útil para aulas
+                    for (let slotIdx = 0; slotIdx < timeSlots.length; slotIdx++) {
+                        const currentAulaIndex = timeIndices[slotIdx];
+                        let slotData = { type: 'empty', content: '', cssClass: '', style: '' };
+                        let slotFilled = false;
+                        
+                        if (currentAulaIndex === null) { 
+                            slotData = { 
+                                type: 'interval', 
+                                content: '☕ Intervalo', 
+                                cssClass: '', 
+                                style: '' 
+                            }; 
+                            slotFilled = true; 
+                        }
+                        else {
+                            // Verificar disciplinas intensivas
+                            for (const intensiveCourse of config.intensiveCourses) { 
+                                if (currentFullDate >= intensiveCourse.startDate && currentFullDate <= intensiveCourse.endDate) { 
+                                    const subject = getSubjectByKey(intensiveCourse.key); 
+                                    if (subject && currentAulaIndex < intensiveCourse.slotsPerDay) { 
+                                        if (completedSubjectLoads[intensiveCourse.key] < subject.carga) { 
+                                            completedSubjectLoads[intensiveCourse.key]++; 
+                                            slotData = { 
+                                                type: 'intensive', 
+                                                key: intensiveCourse.key, 
+                                                content: `<span class="subject-name">⚡ ${subject.nome}</span>`, 
+                                                cssClass: '', 
+                                                style: `background-color: ${subject.bgColor}; color: ${subject.textColor};` 
+                                            }; 
+                                        } else { 
+                                            slotData = { 
+                                                type: 'empty', 
+                                                content: '', 
+                                                cssClass: '', 
+                                                style: '' 
+                                            }; 
+                                        } 
+                                        slotFilled = true; 
+                                        break; 
+                                    } 
+                                } 
+                            }
+                            
+                            // Verificar grade regular se não foi preenchido por intensiva
+                            if (!slotFilled) { 
+                                const scheduleDayIndex = dayOfWeek - 1; 
+                                if (scheduleDayIndex >= 0 && scheduleDayIndex <= 4) { 
+                                    const subjectKeyRegular = config.weeklySchedule[scheduleDayIndex]?.[currentAulaIndex]; 
+                                    if(subjectKeyRegular){ 
+                                        const subjectRegular = getSubjectByKey(subjectKeyRegular); 
+                                        if(subjectRegular){ 
+                                            let subjectIsCurrentlyIntensive = false; 
+                                            for (const ic of config.intensiveCourses) { 
+                                                if (ic.key === subjectKeyRegular && currentFullDate >= ic.startDate && currentFullDate <= ic.endDate) { 
+                                                    subjectIsCurrentlyIntensive = true; 
+                                                    break; 
+                                                } 
+                                            } 
+                                            if (!subjectIsCurrentlyIntensive) { 
+                                                if (completedSubjectLoads[subjectKeyRegular] < subjectRegular.carga) { 
+                                                    completedSubjectLoads[subjectKeyRegular]++; 
+                                                    slotData = { 
+                                                        type: 'subject', 
+                                                        key: subjectKeyRegular, 
+                                                        content: `<span class="subject-name">📚 ${subjectRegular.nome}</span>`, 
+                                                        cssClass: '', 
+                                                        style: `background-color: ${subjectRegular.bgColor}; color: ${subjectRegular.textColor};` 
+                                                    }; 
+                                                } else { 
+                                                    slotData = { 
+                                                        type: 'empty', 
+                                                        content: '', 
+                                                        cssClass: '', 
+                                                        style: '' 
+                                                    }; 
+                                                } 
+                                            } 
+                                        } 
+                                    } 
+                                } 
+                            }
+                        }
+                        allMonthsData[dateKey].push(slotData);
+                    }
+                }
+                
+                console.log("✅ Fase de alocação concluída.");
+
+                // Fase de Renderização
+                console.log("🎨 Iniciando fase de renderização...");
+                
+                outputCalendarsDiv.innerHTML = ''; 
+                outputTabsDiv.innerHTML = '';
+                let firstTab = true;
+                
+                for (let m = config.startMonth; m <= config.endMonth; m++) {
+                    let monthName = config.monthNames[m];
+                    const monthId = `calendar-${monthName.toLowerCase().replace(/ç/g, 'c').replace(/ã/g, 'a')}`;
+                    const tabId = monthName.toLowerCase().replace(/ç/g, 'c').replace(/ã/g, 'a');
+                    
+                    // Criar aba do mês
+                    const tabButton = document.createElement('button'); 
+                    tabButton.className = 'tab-button'; 
+                    tabButton.setAttribute('data-month', tabId); 
+                    tabButton.textContent = `📅 ${monthName}`; 
+                    outputTabsDiv.appendChild(tabButton);
+                    
+                    // Criar container do mês
+                    const monthDiv = document.createElement('div'); 
+                    monthDiv.id = monthId; 
+                    monthDiv.className = 'month-calendar'; 
+                    outputCalendarsDiv.appendChild(monthDiv);
+
+                    let tableHtml = `<h3>📅 ${monthName} ${config.year}</h3><table><thead><tr><th>Horário</th><th>Seg</th><th>Ter</th><th>Qua</th><th>Qui</th><th>Sex</th><th class="weekend-header">Sáb</th><th class="weekend-header">Dom</th></tr></thead><tbody>`;
+                    
+                    const firstDayOfMonth = new Date(config.year, m, 1);
+                    const daysInMonth = new Date(config.year, m + 1, 0).getDate();
+                    let startingTableDay = firstDayOfMonth.getDay(); 
+                    if (startingTableDay === 0) startingTableDay = 7;
+                    let currentDayInGrid = 1 - (startingTableDay - 1);
+
+                    for (let weekRow = 0; weekRow < 6; weekRow++) {
+                         if (currentDayInGrid > daysInMonth && weekRow > 0) break;
+                         
+                        for (let slotIdx = 0; slotIdx < timeSlots.length; slotIdx++) {
+                            const timeLabel = timeSlots[slotIdx];
+                            let rowClassesList = [];
+                            
+                            if (slotIdx === 0) rowClassesList.push("week-start-separator");
+                            if (timeIndices[slotIdx] === null) rowClassesList.push("interval-row");
+                            
+                            let rowClassAttribute = rowClassesList.length > 0 ? ` class="${rowClassesList.join(" ")}"` : "";
+                            tableHtml += `<tr${rowClassAttribute}><td class="time-slot-label">${timeLabel}</td>`;
+
+                            for (let dayOfWeekInTable = 1; dayOfWeekInTable <= 7; dayOfWeekInTable++) {
+                                const cellDateNumberForCalc = currentDayInGrid + (dayOfWeekInTable - 1);
+                                const cellDate = new Date(config.year, m, cellDateNumberForCalc, 12, 0, 0);
+                                const dateKey = formatDateKey(cellDate);
+                                let displayDateNumber = null;
+                                let cellContent = '';
+                                let cellCssClass = '';
+                                let styleAttribute = '';
+
+                                const belongsToCurrentMonth = (cellDate.getFullYear() === config.year && cellDate.getMonth() === m && cellDateNumberForCalc >= 1 && cellDateNumberForCalc <= daysInMonth);
+                                const cellData = allMonthsData[dateKey]?.[slotIdx];
+
+                                if (belongsToCurrentMonth) {
+                                    displayDateNumber = cellDate.getDate();
+                                    if (cellData) {
+                                        cellContent = cellData.content;
+                                        cellCssClass = cellData.cssClass || '';
+                                        styleAttribute = cellData.style || '';
+
+                                        if (!cellCssClass && cellData.type === 'weekend') {
+                                            cellCssClass = 'weekend';
+                                        }
+                                    }
+                                    
+                                    if (dayOfWeekInTable >= 6 && !cellCssClass.includes('weekend') && cellCssClass !== 'holiday' && cellCssClass !== 'recesso-day') {
+                                        cellCssClass += ' weekend';
+                                    }
+
+                                } else {
+                                    cellCssClass = 'inactive-day';
+                                    if (dayOfWeekInTable >= 6) cellCssClass += ' weekend';
+                                    displayDateNumber = cellDate.getDate();
+                                    cellContent = '';
+                                    styleAttribute = '';
+                                }
+
+                                tableHtml += createTableCell(cellContent, cellCssClass.trim(), displayDateNumber, slotIdx === 0, styleAttribute);
+                            }
+                            tableHtml += `</tr>`;
+                        }
+                         currentDayInGrid += 7;
+                    }
+                    
+                    tableHtml += `</tbody></table>`;
+                    monthDiv.innerHTML = tableHtml;
+
+                    if (firstTab) { 
+                        tabButton.classList.add('active'); 
+                        monthDiv.classList.add('active-calendar'); 
+                        firstTab = false; 
+                    }
+                }
+
+                // Configurar informações de saída
+                document.getElementById('outputTurmaInfo').textContent = `🎓 Turma: ${config.turmaNome} - Ano: ${config.year}`;
+                document.getElementById('outputTitle').style.display = 'block';
+                
+                // Criar botão de salvar
+                const saveButton = document.createElement('button'); 
+                saveButton.id = 'saveCalendarBtn'; 
+                saveButton.innerHTML = '💾 Salvar Calendário HTML'; 
+                saveButton.onclick = () => downloadCalendarHtml(config); 
+                saveButtonContainer.appendChild(saveButton);
+                
+                // Mostrar container de saída
+                outputContainer.style.display = 'block';
+                
+                // Configurar eventos das abas
+                const newTabs = outputTabsDiv.querySelectorAll('.tab-button'); 
+                const newCalendars = outputCalendarsDiv.querySelectorAll('.month-calendar');
+                
+                newTabs.forEach(tab => { 
+                    tab.addEventListener('click', function () { 
+                        newTabs.forEach(t => t.classList.remove('active')); 
+                        newCalendars.forEach(c => c.classList.remove('active-calendar')); 
+                        this.classList.add('active'); 
+                        
+                        const monthId = 'calendar-' + this.getAttribute('data-month'); 
+                        const calendarDiv = document.getElementById(monthId); 
+                        if (calendarDiv) { 
+                            calendarDiv.classList.add('active-calendar'); 
+                        } 
+                    }); 
+                });
+                
+                console.log("✅ Geração concluída com sucesso!");
+                console.log("📊 Carga Horária Final:", completedSubjectLoads);
+                
+                // Scroll suave para o resultado
+                outputContainer.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (error) { 
+                console.error("❌ Erro durante o processo de geração:", error); 
+                alert("❌ Ocorreu um erro ao gerar o calendário. Verifique o console (F12) para mais detalhes."); 
+                outputContainer.style.display = 'none'; 
+            }
+        }
+
+        // Função para ler e validar o formulário
+        function readAndValidateForm(formElement) {
+            const formData = new FormData(formElement);
+            const config = {
+                subjects: {}, 
+                weeklySchedule: { 0:{}, 1:{}, 2:{}, 3:{}, 4:{} }, 
+                holidays: {}, 
+                recess: {}, 
+                intensiveCourses: [],
+                monthNames: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+                classesStartDate: null, 
+                classesEndDate: null
+            };
+            
+            try {
+                // Informações gerais
+                config.turmaNome = formData.get('turmaNome'); 
+                config.year = parseInt(formData.get('year'), 10); 
+                config.startMonth = parseInt(formData.get('startMonth'), 10); 
+                config.endMonth = parseInt(formData.get('endMonth'), 10);
+                
+                // Datas de aulas
+                const startDateValue = formData.get('classesStartDate'); 
+                if (!startDateValue) throw new Error("📅 Data de início das aulas é obrigatória.");
+                
+                const partsStart = startDateValue.split('-'); 
+                config.classesStartDate = new Date(partsStart[0], parseInt(partsStart[1], 10) - 1, partsStart[2]);
+                
+                if (isNaN(config.classesStartDate.getTime())) { 
+                    throw new Error("📅 Data de início das aulas inválida."); 
+                }
+                
+                const endDateValue = formData.get('classesEndDate'); 
+                if (!endDateValue) throw new Error("📅 Data de fim das aulas é obrigatória.");
+                
+                const partsEnd = endDateValue.split('-'); 
+                config.classesEndDate = new Date(partsEnd[0], parseInt(partsEnd[1], 10) - 1, partsEnd[2], 23, 59, 59, 999);
+                
+                if (isNaN(config.classesEndDate.getTime())) { 
+                    throw new Error("📅 Data de fim das aulas inválida."); 
+                }
+
+                const startDateOnly = new Date(config.classesStartDate.getFullYear(), config.classesStartDate.getMonth(), config.classesStartDate.getDate());
+                const endDateOnly = new Date(config.classesEndDate.getFullYear(), config.classesEndDate.getMonth(), config.classesEndDate.getDate());
+                
+                if (endDateOnly < startDateOnly) { 
+                    throw new Error("📅 Data de fim das aulas não pode ser anterior à data de início."); 
+                }
+
+                // Turno
+                config.turno = formElement.querySelector('input[name="turno"]:checked')?.value; 
+                
+                if (!config.turmaNome || isNaN(config.year) || isNaN(config.startMonth) || isNaN(config.endMonth) || !config.turno) { 
+                    throw new Error("ℹ️ Informações gerais ou de turno inválidas ou ausentes."); 
+                } 
+                
+                if (!SHIFT_TIMES[config.turno]) throw new Error("⏰ Turno selecionado inválido."); 
+                
+                config.timeSlotsLabels = SHIFT_TIMES[config.turno].labels; 
+                config.subjectTimeSlotIndices = SHIFT_TIMES[config.turno].indices;
+                
+                // Disciplinas regulares
+                const subjectKeys = formData.getAll('subject_key[]'); 
+                const subjectNames = formData.getAll('subject_name[]'); 
+                const subjectLoads = formData.getAll('subject_load[]'); 
+                const subjectBgColors = formData.getAll('subject_bgcolor[]'); 
+                const subjectTextColors = formData.getAll('subject_textcolor[]'); 
+                
+                if (subjectKeys.length === 0) { 
+                    throw new Error("📚 Adicione ao menos uma disciplina regular."); 
+                } 
+                
+                for(let i = 0; i < subjectKeys.length; i++) { 
+                    const key = subjectKeys[i].trim(); 
+                    const load = parseInt(subjectLoads[i], 10); 
+                    
+                    if (!key || !subjectNames[i] || isNaN(load) || load <= 0 || !subjectBgColors[i] || !subjectTextColors[i]) { 
+                        throw new Error(`📚 Dados inválidos para a disciplina "${subjectNames[i] || `item ${i+1}`}". Verifique chave, nome, carga horária e cores.`); 
+                    } 
+                    
+                    if (config.subjects[key]) { 
+                        throw new Error(`🔑 Chave (ID) de disciplina duplicada: ${key}. Remova uma das duplicatas.`); 
+                    } 
+                    
+                    config.subjects[key] = { 
+                        nome: subjectNames[i], 
+                        carga: load, 
+                        bgColor: subjectBgColors[i], 
+                        textColor: subjectTextColors[i] 
+                    }; 
+                }
+                
+                // Disciplinas intensivas
+                const intensiveSubjectKeys = formData.getAll('intensive_subject_key[]'); 
+                const intensiveStartDates = formData.getAll('intensive_start_date[]'); 
+                const intensiveEndDates = formData.getAll('intensive_end_date[]'); 
+                const intensiveSlotsPerDay = formData.getAll('intensive_slots_per_day[]'); 
+                
+                for (let i = 0; i < intensiveSubjectKeys.length; i++) { 
+                    const key = intensiveSubjectKeys[i]; 
+                    const startDateStr = intensiveStartDates[i]; 
+                    const endDateStr = intensiveEndDates[i]; 
+                    const slots = parseInt(intensiveSlotsPerDay[i], 10); 
+                    
+                    if (!key || !startDateStr || !endDateStr || isNaN(slots) || slots < 1 || slots > 6 ) { 
+                        throw new Error(`⚡ Dados inválidos para a disciplina intensiva ${i + 1}. Verifique disciplina, datas e aulas/dia (1-6).`); 
+                    } 
+                    
+                    if (!config.subjects[key]) { 
+                        throw new Error(`📚 Disciplina intensiva "${key}" não encontrada na lista de disciplinas regulares. Adicione-a primeiro lá.`); 
+                    } 
+                    
+                    const iPartsStart = startDateStr.split('-'); 
+                    const iPartsEnd = endDateStr.split('-'); 
+                    const startDate = new Date(iPartsStart[0], parseInt(iPartsStart[1],10)-1, iPartsStart[2]); 
+                    const endDate = new Date(iPartsEnd[0], parseInt(iPartsEnd[1],10)-1, iPartsEnd[2], 23, 59, 59, 999); 
+                    
+                    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) { 
+                        throw new Error(`📅 Datas inválidas para a disciplina intensiva ${config.subjects[key]?.nome || key}.`); 
+                    } 
+                    
+                    if (startDate > endDate) { 
+                        throw new Error(`📅 Data de início não pode ser posterior à data de fim para a disciplina intensiva ${config.subjects[key]?.nome || key}.`); 
+                    } 
+                    
+                    config.intensiveCourses.push({ 
+                        key: key, 
+                        startDate: startDate, 
+                        endDate: endDate, 
+                        slotsPerDay: slots 
+                    });
+                }
+                
+                // Grade horária
+                const scheduleSelects = formElement.querySelectorAll('#weeklyScheduleGrid select'); 
+                scheduleSelects.forEach(select => { 
+                    const name = select.name; 
+                    const parts = name.split('_'); 
+                    const dayIndex = parseInt(parts[1], 10); 
+                    const timeIndex = parseInt(parts[2], 10); 
+                    const subjectKey = select.value || null; 
+                    
+                    if (!isNaN(dayIndex) && !isNaN(timeIndex) && dayIndex >= 0 && dayIndex <=4 && timeIndex >= 0 && timeIndex <=5) { 
+                        if(!config.weeklySchedule[dayIndex]) config.weeklySchedule[dayIndex] = {}; 
+                        config.weeklySchedule[dayIndex][timeIndex] = subjectKey; 
+                    } 
+                });
+                
+                // Feriados
+                const holidayDates = formData.getAll('holiday_date[]'); 
+                const holidayNames = formData.getAll('holiday_name[]'); 
+                
+                for(let i = 0; i < holidayDates.length; i++) { 
+                    const dateValue = holidayDates[i]; 
+                    if (!dateValue || !holidayNames[i]) { 
+                        throw new Error(`🎉 Dados inválidos para o feriado ${i+1}. Verifique data e nome.`); 
+                    } 
+                    const parts = dateValue.split('-'); 
+                    const dateKey = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+                    config.holidays[dateKey] = holidayNames[i]; 
+                }
+                
+                // Recesso
+                const recessStartStr = formData.get('recessStartDate'); 
+                const recessEndStr = formData.get('recessEndDate'); 
+                
+                if (recessStartStr && recessEndStr) { 
+                    const rPartsStart = recessStartStr.split('-'); 
+                    const rPartsEnd = recessEndStr.split('-'); 
+                    config.recess.start = new Date(rPartsStart[0], parseInt(rPartsStart[1],10)-1, rPartsStart[2]); 
+                    config.recess.end = new Date(rPartsEnd[0], parseInt(rPartsEnd[1],10)-1, rPartsEnd[2], 23, 59, 59, 999); 
+                    
+                    if (isNaN(config.recess.start.getTime()) || isNaN(config.recess.end.getTime())) { 
+                        throw new Error("🏖️ Datas de recesso inválidas."); 
+                    } 
+                    
+                    if(config.recess.start > config.recess.end) { 
+                        throw new Error("🏖️ Data de início do recesso não pode ser posterior à data de fim.");
+                    } 
+                } else if (recessStartStr || recessEndStr) { 
+                    throw new Error("🏖️ Para definir um período de recesso, ambas as datas (início e fim) devem ser preenchidas."); 
+                } else { 
+                    config.recess = null; 
+                }
+                
+                return config;
+                
+            } catch (error) { 
+                console.error("❌ Erro ao ler/validar formulário:", error); 
+                alert(`❌ Erro no formulário:\n${error.message}\n\n(Verifique o console F12 para mais detalhes técnicos)`); 
+                return null; 
+            }
+        }
+
+        // Função para download do HTML
+        function downloadCalendarHtml(config) { 
+            console.log("💾 Preparando download do calendário..."); 
+            
+            const calendarHtml = document.getElementById('outputCalendars').innerHTML; 
+            const tabsHtml = document.getElementById('outputMonthTabs').innerHTML; 
+            let styles = ""; 
+            
+            // Capturar estilos
+            Array.from(document.styleSheets).forEach(sheet => { 
+                try { 
+                    Array.from(sheet.cssRules || sheet.rules).forEach(rule => { 
+                        styles += rule.cssText; 
+                    }); 
+                } catch (e) { 
+                    console.warn("⚠️ Não foi possível acessar as regras de uma folha de estilo:", e); 
+                    if (sheet.href) { 
+                        styles += `@import url('${sheet.href}');\n`; 
+                    } 
+                } 
+            }); 
+            
+            const inlineStyleTag = document.querySelector('head > style'); 
+            if(inlineStyleTag && !styles.includes(inlineStyleTag.innerHTML)){ 
+                styles += inlineStyleTag.innerHTML; 
+            } 
+            
+            const title = document.getElementById('outputTitle').outerHTML; 
+            const turmaInfo = document.getElementById('outputTurmaInfo').outerHTML; 
+            
+            let filename = `calendario_${(config.turmaNome || 'turma').replace(/\s+/g, '_')}_${config.year}_${config.turno}.html`; 
+            filename = filename.replace(/[^a-z0-9_\-\.]/gi, '_').toLowerCase(); 
+            
+            const finalHtml = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📅 Calendário - ${config.turmaNome}</title>
+    <style>
+        ${styles} 
+        #outputSaveButtonContainer { display: none !important; } 
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container-output" style="margin: 20px auto; max-width: 1200px;"> 
+        ${title} 
+        ${turmaInfo}
+        <div class="month-tabs">${tabsHtml}</div>
+        <div id="outputCalendars">${calendarHtml}</div>
+        <div style="text-align: center; margin-top: 30px; padding: 20px; background: rgba(255,255,255,0.1); border-radius: 10px;">
+            <p style="color: white; font-size: 0.9em; margin: 0;">
+                📅 Calendário gerado automaticamente • 
+                🎓 ${config.turmaNome} • 
+                📆 ${config.year} • 
+                ⏰ Turno: ${config.turno === 'manha' ? 'Manhã' : 'Tarde'}
+            </p>
+        </div>
+    </div>
+    
+    <script> 
+        document.addEventListener('DOMContentLoaded', function () { 
+            const tabs = document.querySelectorAll('.month-tabs .tab-button'); 
+            const calendars = document.querySelectorAll('#outputCalendars .month-calendar'); 
+            
+            if (!tabs || !calendars) return; 
+            
+            function setActiveContent(targetMonth) { 
+                tabs.forEach(t => t.classList.remove('active')); 
+                calendars.forEach(c => c.classList.remove('active-calendar')); 
+                
+                const activeTabButton = document.querySelector(\`.month-tabs .tab-button[data-month="\${targetMonth}"]\`); 
+                if (activeTabButton) activeTabButton.classList.add('active'); 
+                
+                const calendarDiv = document.getElementById(\`calendar-\${targetMonth}\`); 
+                if(calendarDiv) calendarDiv.classList.add('active-calendar'); 
+            } 
+            
+            tabs.forEach(tab => { 
+                tab.addEventListener('click', function () { 
+                    setActiveContent(this.getAttribute('data-month')); 
+                }); 
+            }); 
+            
+            const activeTab = document.querySelector('.month-tabs .tab-button.active'); 
+            if (!activeTab && tabs.length > 0) { 
+                setActiveContent(tabs[0].getAttribute('data-month')); 
+            } else if (activeTab) { 
+                setActiveContent(activeTab.getAttribute('data-month')); 
+            } 
+        }); 
+    <\/script>
+</body>
+</html>`; 
+            
+            try { 
+                const blob = new Blob([finalHtml], { type: 'text/html;charset=utf-8' }); 
+                const link = document.createElement('a'); 
+                link.href = URL.createObjectURL(blob); 
+                link.download = filename; 
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link); 
+                URL.revokeObjectURL(link.href); 
+                
+                console.log("✅ Download realizado com sucesso!"); 
+            } catch (error) { 
+                console.error("❌ Erro no download:", error); 
+                alert("❌ Erro ao baixar o arquivo."); 
+            } 
+        }
+
+        // Função para preencher grade da tarde (exemplo)
+        function prefillAfternoonSchedule() {
+            const afternoonSchedule = { 
+                "schedule_0_0": "EP05007", "schedule_0_1": "EP05007", "schedule_0_2": "EP05007", 
+                "schedule_0_3": "EP05006", "schedule_0_4": "EP05006", "schedule_0_5": "", 
+                "schedule_1_0": "EP05004", "schedule_1_1": "EP05004", "schedule_1_2": "EP05004", 
+                "schedule_1_3": "EP05005", "schedule_1_4": "EP05005", "schedule_1_5": "", 
+                "schedule_2_0": "EP05007", "schedule_2_1": "EP05007", "schedule_2_2": "EP05007", 
+                "schedule_2_3": "EP05002", "schedule_2_4": "EP05002", "schedule_2_5": "EP05002", 
+                "schedule_3_0": "EP05004", "schedule_3_1": "EP05004", "schedule_3_2": "EP05004", 
+                "schedule_3_3": "EP05003", "schedule_3_4": "EP05003", "schedule_3_5": "EP05003", 
+                "schedule_4_0": "EP05001", "schedule_4_1": "EP05001", "schedule_4_2": "EP05001", 
+                "schedule_4_3": "EP05001", "schedule_4_4": "EP05005", "schedule_4_5": "EP05005" 
+            }; 
+            
+            for (const name in afternoonSchedule) { 
+                const select = document.querySelector(`#weeklyScheduleGrid select[name="${name}"]`); 
+                if (select) { 
+                    select.value = afternoonSchedule[name]; 
+                } 
+            } 
+        }
+
+        // Inicialização quando DOM carrega
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("🚀 Inicializando Gerador de Calendário...");
+            
+            // Event listeners principais
+            document.getElementById('openSubjectModalBtn').addEventListener('click', openSubjectSelectionModal);
+            document.getElementById('addCustomSubjectBtn').addEventListener('click', addEmptySubjectRow);
+            document.getElementById('addHolidayBtn').addEventListener('click', addHolidayRow);
+            document.getElementById('addIntensiveCourseBtn').addEventListener('click', addIntensiveCourseRow);
+            document.getElementById('generateButton').addEventListener('click', generateFromForm);
+            
+            // Modal events
+            closeSubjectModalBtn.addEventListener('click', () => subjectSelectionModal.style.display = 'none');
+            window.addEventListener('click', (event) => { 
+                if (event.target == subjectSelectionModal) { 
+                    subjectSelectionModal.style.display = 'none'; 
+                } 
+            });
+            
+            // Search events
+            subjectSearchInput.addEventListener('keyup', populatePredefinedSubjectsList);
+            subjectSearchInput.addEventListener('input', populatePredefinedSubjectsList);
+            
+            // Inicializar com disciplinas de exemplo
+            const initialSubjectCodesForDemo = ["EP05001", "EP05002", "EP05003", "EP05004", "EP05005", "EP05006", "EP05007"];
+            initialSubjectCodesForDemo.forEach(code => { 
+                const subjectData = PREDEFINED_SUBJECTS.find(s => s.code === code); 
+                if (subjectData) { 
+                    addSubjectRowFromPredefined(subjectData); 
+                } 
+            });
+            
+            updateScheduleSelectOptions();
+            prefillAfternoonSchedule();
+            
+            console.log("✅ Inicialização concluída!");
+        });
+    </script>
+</body>
+</html>
